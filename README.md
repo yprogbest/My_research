@@ -18,15 +18,15 @@
 
 
 #### 1. 卒業研究と今後の取り組み(4/9)
-- [Slide](https://github.com/yuki-research/My_research/files/6286696/0409_P_Masuda.pdf)
+- [Slide](https://github.com/yuki-research/My_research/files/6286897/0409_P_Masuda.pdf)
 
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## 研究紹介
 ### ２０２０後期（4年）
 #### 8. 学会発表会(3/2)
-- [Slide](https://github.com/yuki-research/My_research/files/6286730/P_Masuda_.pdf)
-- [Report](https://github.com/yuki-research/My_research/files/6286722/517359_masuda_.pdf)
+- [Slide](https://github.com/yuki-research/My_research/files/6286909/P_Masuda_.pdf)
+- [Report](https://github.com/yuki-research/My_research/files/6286914/517359_masuda_.pdf)
 
 ##### はじめに
 近年，スマート農業の旗印の下で，大規模稲作向けのロボットや収穫ロボットの開発が進んでいるが，作業者と協働可能なロボットの開発は進んでいない． 
