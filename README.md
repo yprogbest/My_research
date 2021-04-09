@@ -36,8 +36,8 @@
 
 
 #### 7. 卒論発表会(2/17)
-- [Slide](https://github.com/yuki-research/My_research/files/6286707/P_Masuda.pdf)
-- [Report](https://github.com/yuki-research/My_research/files/6286703/3_.pdf)
+- [Slide](https://github.com/yuki-research/My_research/files/6286932/P_Masuda.pdf)
+- [Report](https://github.com/yuki-research/My_research/files/6286943/3_.pdf)
 
 ##### はじめに
 近年，スマート農業の旗印の下で，大規模稲作向けのロボットや収穫ロボットの開発が進んでいるが，作業者と協働可能なロボットの開発は進んでいない．ロボットを安全に稼働させるために，作業者や障害物を検出する技術は開発されているが，作業者の行動を理解しながら作業の支援内容を意思決定するシステムは開発されていない．
