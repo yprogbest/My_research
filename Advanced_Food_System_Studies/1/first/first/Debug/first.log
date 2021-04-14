@@ -1,0 +1,2 @@
+﻿  first.cpp
+f:\m1\advanced_food_system_studies\1\first\first\first.cpp(11): fatal error C1083: include ファイルを開けません。'opencv2/opencv.hpp':No such file or directory
