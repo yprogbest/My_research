@@ -1,0 +1,786 @@
+
+C++を使ってOpenCVのプログラムを組む時のポイント
+
+1.　C++の名前空間
+
+using namespace std;
+using namespace cv;
+
+
+2．C++のcin,coutでデータ入出力
+
+
+#include <iostream>
+int x;
+std::cout << "x=";
+std::cin >> x;
+
+
+3.　C++で文字列を扱うstringクラス，stringstreamクラス
+
+3.1 stringクラス
+#include <string>
+
+string win_src_cam1 = "cam1";
+
+3.2 stringstreamクラス
+文字列から数値を抜き出す，文字列を空白で区切る，0埋めなどを行うために使われる．
+
+
+#inclue <sstream>
+
+宣言
+std::stringstream ss;
+std:string str = "morio";
+
+文字列を取得したい場合
+ss.str();
+
+文字列や数値を追加する
+ss << str;
+
+さらに，数値をその後に追加する
+int num = 8;
+ss << str << num;//数値の8を追加している
+
+std::cout << ss.str() << "\n";
+
+---------------------------------
+出力結果：　morio8
+---------------------------------
+
+
+文字列の抜き出し
+
+これまでに追加した文字列をssから抜き出したい場合
+
+std::string str; //stringクラスを宣言
+
+ss  >> str;　//ss.str()に対応する文字列を抜き出し変数strに入力している
+
+std::cout << str << "\n";
+
+
+（注意）
+std::string str = "Morio Yoshinari";
+std::string output;
+
+ss << str;
+ss >> output;
+
+std::cout << "original:" << str << "\n";
+std::cout << "output" << output << "\n";
+---------------------------------
+出力結果：　Morio
+スペースや改行コードでデータが区切られるため，Morioしか抜き出されない
+---------------------------------
+
+
+
+数値を抜き出したい場合
+
+std::stringstream ss;
+std::string str = "300 Japanese Yen.";
+int outputNum;
+
+ss << str;
+ss >> outputNum;
+
+std::cout << "original：" << str << "\n";
+std::cout << "output" << outputNum << "\n";
+
+
+
+
+1行まとめて読み込むgetlineを使う
+#include <iostream>
+
+std::stringstream ss;
+
+std::string str = "Morio Yoshinari\nWelcome to our University!";
+
+std::string output;
+
+ss << str;
+
+std::getline(ss, output);//1行だけ読み込むため，outputには2行目の文字列は入らない
+
+std::cout << "original:\n" << str << "\n";
+std::cout << "output:" << output << "\n";
+
+
+---------------------------------
+出力結果：　
+
+original:
+Morio Yoshinari
+Welcome to our University!
+
+output:Morio Yoshinari
+
+
+4.　C++のvector型を用いた動的メモリ確保
+
+#include <vector>
+
+//変数宣言
+std::vector<int> data;
+int x;
+
+
+//データ追加
+data.push_back(x);
+
+//メモリの解放
+data.clear();
+data.shrink_to_fit();
+
+
+2次元配列
+vector<vector<int>> data;
+vector<int> buf_data;
+
+int x;
+int y;
+
+x=1;
+buf_data.push_back(x);
+x=2;
+buf_data.push_back(x);
+
+data.push_back(buf_data);
+
+y=3;
+buf_data.clear();
+buf_data.shrink_to_fit();
+buf_data.push_back(y);
+data.push_back(buf_data);
+
+
+data[0][0] ==> 1
+data[0][1] ==> 2;
+data[1][0] ==> 3;
+
+
+
+
+5.　OpenCVのMat型の使い方
+
+5.1.　Mat型変数を宣言する
+
+Mat img;
+Mat img_hsv;
+
+img.cols　画像の横サイズ
+img.rows　画像の縦サイズ
+img.channels()　チャンネル数
+
+5.2.　サイズとチャンネル数を指定して宣言
+
+Mat RGB(IMG_YSIZE, IMG_XSIZE, CV_8UC3); //unsigned char RGB3チャンネル
+Mat xyz(IMG_YSIZE, IMG_XSIZE, CV_64FC1); //64ビット実数（double），1チャンネル
+
+
+CV_8UC3： unsigned char，3チャンネル
+CV_32FC1: float，1チャンネル
+CV_64FC1: double，1チャンネル
+
+								
+5.3.　宣言と同時に初期化
+
+8ビット符号なし整数型（unsigned char）で1チャンネル，ゼロで初期化
+
+Mat::zeros(int rows, int cols, int type);
+Mat::zeros(Size size, int type) ;
+
+cv::Mat img(IMG_YSIZE, IMG_XSIZE, CV_8UC1, cv::Scalar(0)); // 1チャンネルScalar(0)で初期化
+cv::Mat img2(cv::Size(IMG_XSIZE, IMG_YSIZE), CV_8UC3, cv::Scalar(0, 0, 255)); //B=0,G=0,R=255で初期化
+
+
+5.4.　各チャンネルにアクセスする
+
+単チャンネルの場合
+img.at<uchar>(y, x)
+
+Mat camera_axis_1(3, 1, CV_64FC1);
+camera_axis_1.at<double>(0, 0) = 1.0;
+camera_axis_1.at<double>(1, 0) = 0;
+camera_axis_1.at<double>(2, 0) = 0;
+
+
+RGBの3チャンネルの場合
+img.at<cv::Vec3b>(y, x)[0]; //B
+img.at<cv::Vec3b>(y, x)[1]; //G
+img.at<cv::Vec3b>(y, x)[2]; //R
+
+
+HSV変換後のアクセス
+cvtColor(img, img_hsv, CV_BGR2HSV);
+
+img_hsv.at<Vec3b>(y, x)[0] //Hue 0－180:2倍して0-360で考える
+img_hsv.at<Vec3b>(y, x)[1] //Saturation 0-255:255で割って0-1.0で考える
+img_hsv.at<Vec3b>(y, x)[2] //Value 0-255:255で割って0-1.0で考える
+
+
+
+5.6.　Matの浅いコピーと深いコピー
+
+浅いコピー
+mat2は，mat1の記憶域のデータを参照するだけ
+
+mat2 = mat1;
+
+深いコピー
+mat3 = mat1.clone();　// mat1.copyTo(mat3) でも可
+
+
+5.7.　関数の引数にMat
+
+5.7.1　コピー渡し
+
+void func(cv::Mat in)
+{
+　関数内で変更しても，本体は変更されない．
+
+}
+
+
+
+5.7.2　参照渡し
+cv::Mat の参照を渡す場合は，cv::Mat&
+
+void func(cv::Mat& in)
+{
+　関数内で変更すると，本体も変更される．
+
+}
+
+
+
+5.8.　2次元配列とMat
+
+Mat Read_raw_file(string sRawFilePath)
+{
+	Mat img_cam(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
+
+	int i, j;
+	uchar p;
+
+	std::cout << sRawFilePath << " is opened. \n";
+
+	// cam1
+	ifstream ifs_cam(sRawFilePath, ios::in | ios::binary);
+
+	if (ifs_cam.fail()){
+		cerr << "File not found!!" << sRawFilePath << endl;
+		exit(1);
+	}
+
+	ifs_cam.read(reinterpret_cast<char*>(img_cam.data), IMG_XSIZE*IMG_YSIZE * 3);
+
+	ifs_cam.close();
+
+	//replace B value and R value
+	for (j = 0; j < IMG_YSIZE; j++){
+		for (i = 0; i < IMG_XSIZE; i++){
+			p = img_cam.data[(i + j*IMG_XSIZE) * 3];
+			img_cam.data[(i + j*IMG_XSIZE) * 3] = img_cam.data[(i + j*IMG_XSIZE) * 3 + 2];
+			img_cam.data[(i + j*IMG_XSIZE) * 3 + 2] = p;
+		}
+	}
+	return img_cam;
+}
+
+void Split_MatImage_to_RGB_array(Mat img_cam, unsigned char r[IMG_YSIZE][IMG_XSIZE], unsigned char g[IMG_YSIZE][IMG_XSIZE], unsigned char b[IMG_YSIZE][IMG_XSIZE])
+{
+	int i, j;
+	for (j = 0; j < IMG_YSIZE; j++){
+		for (i = 0; i < IMG_XSIZE; i++){
+			r[j][i] = img_cam.data[(i + j*IMG_XSIZE) * 3 + 2];
+			g[j][i] = img_cam.data[(i + j*IMG_XSIZE) * 3 + 1];
+			b[j][i] = img_cam.data[(i + j*IMG_XSIZE) * 3 ];
+		}
+	}
+}
+
+
+void Join_MatImage_to_RGB_array(unsigned char r[IMG_YSIZE][IMG_XSIZE], unsigned char g[IMG_YSIZE][IMG_XSIZE], unsigned char b[IMG_YSIZE][IMG_XSIZE], Mat img_cam)
+{
+	int i, j;
+
+	for (j = 0; j < IMG_YSIZE; j++){
+		for (i = 0; i < IMG_XSIZE; i++){
+			img_cam.data[(i + j*IMG_XSIZE) * 3 + 2] = r[j][i];
+			img_cam.data[(i + j*IMG_XSIZE) * 3 + 1] = g[j][i];
+			img_cam.data[(i + j*IMG_XSIZE) * 3    ] = b[j][i];
+		}
+	}
+}
+
+
+
+
+
+
+5.9.　複数の処理結果を一つのウィンドに表示する
+4画面表示の場合
+Mat	img_combined(IMG_YSIZE * 2, IMG_XSIZE * 2, CV_8UC3);
+Mat	img_view1(img_combined, cv::Rect(0, 0, IMG_XSIZE, IMG_YSIZE));
+Mat	img_view2(img_combined, cv::Rect(IMG_XSIZE, 0, IMG_XSIZE, IMG_YSIZE));
+Mat	img_view3(img_combined, cv::Rect(0, IMG_YSIZE, IMG_XSIZE, IMG_YSIZE));
+Mat	img_view4(img_combined, cv::Rect(IMG_XSIZE, IMG_YSIZE, IMG_XSIZE, IMG_YSIZE));
+
+copyToを用いて4つの画像を転送する
+img_cam1_remap.copyTo(img_view1);
+img_cam2_remap.copyTo(img_view2);
+img_3D_plane.copyTo(img_view3);
+img_feature_points.copyTo(img_view4);
+
+
+
+
+6.　OpenCVで，2次元座標や3次元座標を格納するための変数宣言
+
+6.1　Vec型変数について								
+
+typedef Vec<uchar, 2> Vec2b;
+typedef Vec<uchar, 3> Vec3b;
+typedef Vec<uchar, 4> Vec4b;
+
+typedef Vec<int, 2> Vec2i;
+typedef Vec<int, 3> Vec3i;
+typedef Vec<int, 4> Vec4i;
+
+typedef Vec<float, 2> Vec2f;
+typedef Vec<float, 3> Vec3f;
+typedef Vec<float, 4> Vec4f;
+typedef Vec<float, 6> Vec6f;
+
+typedef Vec<double, 2> Vec2d;
+typedef Vec<double, 3> Vec3d;
+typedef Vec<double, 4> Vec4d;
+typedef Vec<double, 6> Vec6d;
+
+
+
+
+
+
+6.2 Point型
+
+
+typedef Point3_<int> Point3i;
+typedef Point3_<float> Point3f;
+typedef Point3_<double> Point3d;
+
+cv::Point2f pointA;
+cv::Point3f pointB;
+
+初期化
+Point2f a(0.3f, 0.f), b(0.f, 0.4f);
+Point pt = (a + b)*10.f;
+
+アクセス方法
+pointA.x
+pointA.y
+
+pointB.x
+pointB.y
+pointB.z
+
+
+vector<Point3f> p(4);
+
+k番目の座標にアクセスする場合
+p[k].x = 
+p[k].y = 
+p[k].z = 
+
+
+
+
+
+7.　Mata型オブジェクトの値に，ptrメソッドを使って素早くアクセスする方法
+
+(r,c)の値を取得したい場合を例に説明する
+
+atを使う場合は，以下のようになる
+image.at<Vec3b>(r,c)
+
+ptrの場合，まず，行rの先頭へのポインタを取得する
+
+CV_8UC1 ： uchar* ptr = image.ptr<uchar>(r);
+CV_8UC3 ： cv::Vec3b* ptr = image.ptr<cv::Vec3b>(r);
+CV_32FC1 ： float* ptr = image.ptr<float>(r);
+CV_32FC3 ： cv::Vec3f* ptr = image.ptr<cv::Vec3f>(r);
+
+（例）
+
+cv::Vec3b* ptr;
+
+for(int r = 0; r < image.rows; r++) {
+　ptr = image.ptr<cv::Vec3b>(r);
+
+}
+
+次に，列cの先頭へのポインタptr[c]を取得し，3チャンネル場合は，ptr[c][0], ptr[c][1], ptr[c][2]とアクセスする
+
+for(int r = 0; r < image.rows; r++) {
+　
+　ptr = image.ptr<cv::Vec3b>(r);
+　
+　for(int c = 0; c < image.cols; c++) {
+            ptr[c] = cv::Vec3b(ptr[c][0], ptr[c][1], ptr[c][2]);//BGRの場合
+            //ptr[c] = cv::Vec3b(ptr[c][2], ptr[c][1], ptr[c][0]);//RGBの場合
+    }
+
+}
+
+
+for (auto j = 0; j < image_binary.rows; j++) {
+
+	uchar *p_img_b = image_binary.ptr<uchar>(j);
+
+	for (auto i = 0; i < image_binary.cols; i++) {
+		p_img_b[i] = 255;
+	}
+}
+
+
+アクセススピードの比較
+cv::Mat::at<>やMatクラスのdataよりもポインタを用いた方が圧倒的に速度は速い（一桁倍ほど）ようです．
+
+
+
+
+
+8.　ファイル処理
+
+8.1.　フォルダを作成
+sFolder_save_stereo_3D = sMainFolder + "/3D";
+_mkdir(sFolder_save_stereo_3D.c_str());
+
+
+8.2.　ファイルオープン
+FILE *fp = NULL;
+errno_t err;
+string sFilePath;
+
+sFilePath = sMainFolder + "/" + "folderA";
+
+
+err = fopen_s(&fp, sFilePath.c_str(), "rt");
+
+if (err != 0) {
+
+	cout << "cannot open " << endl;
+	cout << sFilePath << endl;
+	return -1;
+
+}
+
+
+fclose(fp);
+
+
+
+8.3.　テキストファイルへの書き出し処理
+　　　
+　　　FILE *fp_w;
+　　　string save_file_path;
+　　　
+　　　save_file_path = sMainFolder + "/" + "out.txt";
+　　　
+	　fopen_s(&fp_w, save_file_path.c_str(), "wt");
+　　　
+　　　fprintf(fp_w, "#Time\tdistance\n");
+　　　
+　　　fclose(fp_w);
+
+
+
+
+
+9.　OpenCVでウィンドウに文字を表示
+
+cv::Point(100, 100)は，表示する位置
+cv::Scalar(0, 255, 0)は，文字色のRGB値
+string sText="Hello";
+
+cv::putText(img_cam1, sText, cv::Point(100, 100), cv::FONT_HERSHEY_SIMPLEX, 1., cv::Scalar(0, 255, 0), 1, CV_AA);
+
+
+
+10.　動画を作る
+
+string sSaveFilePath_moive_stereo;
+
+VideoWriter writer(sSaveFilePath_moive_stereo, VideoWriter::fourcc('m', 'p', '4', 'v'), 30.0, Size(IMG_XSIZE * 2, IMG_YSIZE * 2), true);
+
+// VideoWriter::fourcc('m', 'p', '4', 'v')は，ビデオコーディック形式
+// 30.0は，フレームレート
+// Size(IMG_XSIZE * 2, IMG_YSIZE * 2)は動画のサイズ
+
+
+if (!writer.isOpened()) {
+	cout << "error: movie writer" << sSaveFilePath_moive_stereo << endl;
+	return -1;
+}
+
+
+writer << img_combined; 
+
+// パラパラ漫画のように，画像を更新しながらこのコマンドを繰り返す
+
+
+writer.release();
+
+
+
+
+
+11.　 処理時間の計測
+
+
+#include <Windows.h>
+#pragma comment(lib, "winmm.lib")
+
+
+DWORD	dwSpentTime;
+DWORD	dwTime0, dwTime1;
+
+
+dwTime0 = timeGetTime(); // 計測開始
+
+
+（時間を計測したいコードをここに）
+
+dwTime1 = timeGetTime(); // 計測終了
+
+dwSpentTime = dwTime1 - dwTime0; //　処理時間の計算　ms　単位
+
+
+
+12．USBカメラからの取り込み
+
+
+12.1.　カメラのオープン
+
+
+#define USB_CAM1_NO 1
+
+
+
+VideoCapture capture1(USB_CAM1_NO);
+
+
+
+if (!capture1.isOpened()){
+
+	std::cout << "error: cam1" << endl;
+
+	return -1;
+
+}
+
+
+
+
+12.2.　取り込み画像サイズなどの設定
+
+
+capture1.set(CV_CAP_PROP_FRAME_WIDTH, IMG_XSIZE);
+capture1.set(CV_CAP_PROP_FRAME_HEIGHT, IMG_YSIZE);
+
+capture1.set(CV_CAP_PROP_FPS, 15.0);//フレームレートをあけたい場合
+capture1.set(CV_CAP_PROP_FOCUS, 0);//オートフォーカスをOFFにしたい場合
+
+
+12.3.　画像の読み込み
+
+std::cout << "File path for saving the cam1 image (ex. c:/mytemp/test.png) = ";
+std::cin >> sSaveFilePath;
+
+cv::imwrite(sSaveFilePath, img_cam0);
+
+
+
+12.4.　保存した画像ファイルを読み込み
+std::cout << "Input a file path = ";
+std::cin >> sFilePath;
+
+img_cam0 = cv::imread(sFilePath, 1); //1の場合は，強制的にRGB3チャンネル画像として読み込む，0の場合は，グレースケール
+ if(img_cam0.empty()) return -1;
+
+cv::imshow(win_src_cam0, img_cam0);
+cv::waitKey(1);
+
+
+
+12.5　画像を表示するimshowとnormalize関数
+
+　画像が8ビット符号なし整数の場合：　そのま表示される
+　画像が16ビット符号なし整数：ピクセル値は256で割って整数化して [0,255] にマップされます．0 から （2^16 -1)/2^8
+　画像が32ビット符号なし整数：16ビット符号なし整数と同じ
+　画像が32ビット浮動小数点数の場合，ピクセルは255倍される．つまり，[0,1] の範囲が [0,255] にマップされる．
+
+	normalize(dist, out, 0, 1.0, NORM_MINMAX);//0～1.0の範囲に線形でマッピングされる
+
+	//（説明）
+	//normalize(src, dst, alpha, beta, normType)
+	//min(dst) = alpha, max(dst)=beta
+	//NORM_INF: |dst|=max abs(dst) = alpha
+	//NORM_L1: |dst|=Sigma(abs(dst))=alpha
+	//NORM_L2: |dst|=sqrt( Sigma(dst^2) ) = alpha
+	//NORM_MINMAX: Map into range [alpha, beta]
+
+	imshow("Distance Transform Image", out);
+	//imshowの仕様で，outが実数（32ビット浮動小数点数）の場合，255倍されて[0,255]にマップされる．
+	
+	
+	
+
+
+12.6.　連続取り込みとキーボード入力
+
+while (1){
+
+	capture1 >> img_cam1;
+
+	cv::putText(img_cam1, "Camera 1", cv::Point(10, 450), cv::FONT_HERSHEY_SIMPLEX, 1., cv::Scalar(255, 255, 255), 1, CV_AA);
+
+
+	cv::imshow(win_src_cam1, img_cam1);
+
+
+	//OpenCVの関数waitKey関数でキーボードの入力を待つ場合
+	
+	n_command_no = waitKey(1); //waitKey(0);//とゼロを指定するとキーが入力されるまで待つ
+
+
+	//C++でキーボードの入力を待つ方法
+	
+	// _kbhit();
+	//n_command_no = _getch();		
+
+
+
+
+
+	switch (n_command_no){
+
+
+	case 'q':
+		break;
+
+
+	case 'e':
+
+		n_flag_usb_cam_cancel_connection = 1;
+		break;
+
+
+
+	}
+
+
+
+	if (n_command_no == 'q') break;
+
+
+
+	if (n_flag_usb_cam_cancel_connection == 1) break;
+
+
+}
+
+
+
+
+
+
+
+13.　ゼロ詰め文字列の生成
+
+string make_n_digit_number(int in_No, int n_digit_num)
+{
+	string s_out_number;
+
+	ostringstream oss;
+
+	oss.setf(ios::right);
+
+	oss.fill('0');
+	oss.width(n_digit_num);
+
+	oss << in_No;
+	s_out_number = oss.str();
+
+
+	return s_out_number;
+
+
+}
+
+
+
+
+14．マウスイベントを取得するコールバック関数setMouseCallbackを使ってみる
+　　
+　　□　マウスイベントのメッセージ
+　　
+		□　マウスが移動した	EVENT_MOUSEMOVE
+		□　左ボタンがクリックされた	EVENT_LBUTTONDOWN
+		□　中ボタンがクリックされた	EVENT_MBUTTONDOWN
+		□　右ボタンがクリック された	EVENT_RBUTTONDOWN
+		□　左ボタンを離した	EVENT_LBUTTONUP
+		□　中ボタンを離した	EVENT_MBUTTONUP
+		□　右ボタンを離した	EVENT_RBUTTONUP
+		□　左ボタンがダブルクリックされた	EVENT_LBUTTONDBLCLK
+		□　中ボタンがダブルクリックされた	EVENT_MBUTTONDBLCLK
+		□　右ボタンがダブルクリックされた	EVENT_RBUTTONDBLCLK
+	
+　　□　マウスイベント発生時に押されていたボタンやキーの種類
+　　
+		□　マウスの左ボタン	EVENT_FLAG_LBUTTON
+		□　マウスの右ボタン　EVENT_FLAG_RBUTTON
+		□　マウスの中ボタン　EVENT_FLAG_MBUTTON
+		□　Ctrlキー	EVENT_FLAG_CTRLKEY
+		□　Shiftキー　EVENT_FLAG_SHIFTKEY
+		□　Altキー	EVENT_FLAG_ALTKEY
+
+	□　マウスのクリックを判定するプログラム
+
+	void mouse_callback(int event, int x, int y, int flags, void *userdata)
+	{
+		if (event == EVENT_LBUTTONDOWN) {
+			cout << "Left button is pressed." << endl;
+		}
+	}
+
+	int main()
+	{
+		cv::Mat img(cv::Size(IMG_XSIZE, IMG_YSIZE), CV_8UC3, cv::Scalar(255, 255, 255));
+		imshow("example", img);
+		setMouseCallback("example", mouse_callback);
+		waitKey(0);
+		return 0;
+	}
+
+
+	□　マウスの座標を取得するプログラム
+
+	void mouse_callback(int event, int x, int y, int flags, void *userdata)
+	{
+		if (event == EVENT_MOUSEMOVE) {
+			cout << "[" << x << ", " << y << "]" << endl;
+		}
+	}
+	int main()
+	{
+		cv::Mat img(cv::Size(IMG_XSIZE, IMG_YSIZE), CV_8UC3, cv::Scalar(255, 255, 255));
+		imshow("example", img);
+		setMouseCallback("example", mouse_callback);
+		waitKey(0);
+		return 0;
+	}
