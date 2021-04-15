@@ -73,7 +73,7 @@
 ![ダウンロード](https://user-images.githubusercontent.com/82224433/114548420-b295f200-9c9a-11eb-9abb-966dff44c403.gif)<br>Deep Sortを用いた物体追跡（YOLOv3を使用）
 
 
-### 4/15(木) MedianFlowについて調べた
+### 4/15(木) MedianFlowについて調べた（物体追跡）
 - MedianFlowは，OpenCVで実装可能だが，そのままでは使うことができない．そこで，CMakeをインストールし，opencv_contrivとopencvをビルドした．<br>[Cmakeのインストール方法](https://swallow-incubate.com/archives/blog/20200508/)
 - 
 
