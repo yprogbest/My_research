@@ -8,8 +8,15 @@
 #include <time.h>
 #include <random>
 
-#include <opencv2/opencv.hpp>//OpenCVのインクルード
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/tracking/tracker.hpp>
+#include <opencv2/tracking/tldDataset.hpp>
+#include <opencv2/imgproc.hpp>
+
+
 
 
 
@@ -17,6 +24,8 @@
 //プロトタイプ宣言
 void menu_screen(int &ncommand);
 int disply_movie();
+int tracker_main();
+int tracker_init(cv::Ptr<cv::TrackerMedianFlow> &tracker, cv::Rect2d &rect);
 
 
 
@@ -37,14 +46,21 @@ int main(int argc, const char* argv[])
 
 		switch (nCommand)
 		{
-		case 1:
-			disply_movie();
+			case 1:
+				disply_movie();
 
-			break;
+				break;
 
-		case 0:
-			nFlag = -1;
-			exit(1);
+
+			case 2:
+				tracker_main();
+
+				break;
+
+
+			case 0:
+				nFlag = -1;
+				exit(1);
 
 
 		}
@@ -65,7 +81,8 @@ void menu_screen(int &ncommand)
 	printf("\n");
 	printf("----------------------------------------------------\n");
 	printf("<<1>>:動画の保存\n");
-	printf("<<2>>:〇〇\n");
+	printf("<<2>>:物体追跡\n");
+	printf("<<3>>:〇〇\n");
 	printf("<<0>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -109,8 +126,8 @@ int disply_movie()
 
 
 		//動画から画像を取り出し，フォルダに保存
-		image_name = "F:\\M1\\Advanced_Food_System_Studies\\1\\image\\image" + std::to_string(i) + ".png";
-		cv::imwrite(image_name, frame);
+		//image_name = "F:\\M1\\Advanced_Food_System_Studies\\1\\image\\image" + std::to_string(i) + ".png";
+		//cv::imwrite(image_name, frame);
 
 
 		//動画を保存
@@ -131,4 +148,106 @@ int disply_movie()
 	destroyAllWindows();//ウィンドウを破棄
 
 	return 0;
+}
+
+
+
+
+
+
+int tracker_main()
+{
+	cv::Ptr<cv::TrackerMedianFlow> tracker = cv::TrackerMedianFlow::create();
+	cv::Rect2d roi;
+
+
+	cv::Scalar color = cv::Scalar(0, 255, 0);
+	cv::Mat frame;
+
+	cv::VideoCapture cap(0);
+	if (!cap.isOpened())
+	{
+		std::cout << "Can not open camera!" << std::endl;
+		return -1;
+	}
+
+
+
+	while (cv::waitKey(1) != 'q')
+	{
+		cap >> frame;
+		if (frame.empty())
+		{
+			break;
+		}
+
+
+		//更新
+		tracker->update(frame, roi);
+
+		//結果を表示
+		cv::rectangle(frame, roi, color, 1, 1);
+
+		cv::imshow("tracker", frame);
+	}
+
+
+	return 0;
+
+}
+
+
+
+
+//MedianFlowによる物体追跡（https://qiita.com/atsisy/items/af0670207535b7cd145f）
+int tracker_init(cv::Ptr<cv::TrackerMedianFlow> &tracker, cv::Rect2d &rect)
+{
+	cv::VideoCapture cap(0);
+	if (!cap.isOpened())
+	{
+		std::cout << "Can not open camera!" << std::endl;
+		return -1;
+	}
+
+	cv::Mat frame;
+	cv::namedWindow("image", WINDOW_AUTOSIZE);
+
+	while (1)
+	{
+		cap >> frame;
+		if (frame.empty())
+		{
+			std::cout << "Faild to read a frame!" << std::endl;
+			cv::destroyAllWindows();
+			break;
+		}
+
+
+		cv::imshow("image", frame);
+
+
+
+
+		switch (cv::waitKey(1))
+		{
+			case 'q':
+				return -1;
+
+			case 't':
+
+				rect = cv::selectROI("tracker", frame);
+				tracker->init(frame, rect);
+
+				cv::destroyAllWindows();
+
+				return 1;
+
+
+			default:
+				break;
+		}
+
+	}
+
+	return -1;
 }
