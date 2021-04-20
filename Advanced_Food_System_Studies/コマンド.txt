@@ -1,0 +1,13 @@
+
+VC++ディレクトリ　
+インクルードディレクトリ
+C:/opencv_build/install/include
+
+ライブラリディレクトリ
+C:/opencv_build/install/x64/vc14/lib
+
+
+リンカー
+入力
+追加の依存ディレクトリ
+opencv_world3410.lib
