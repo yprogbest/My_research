@@ -468,7 +468,8 @@ int face_detection(void)
 
 
 
-//https://code-database.com/knowledges/116
+
+
 
 int diff_camera(void)
 {
@@ -476,10 +477,13 @@ int diff_camera(void)
 	Mat gray_frame1, gray_frame2, gray_frame3;
 	Mat diff1, diff2;
 	Mat diff;
+	Mat thres1, thres2, thres3;
 	vector< vector<cv::Point> > contours;
 	vector<cv::Vec4i> hierarchy;
+	Point temp;
+	int temp_x, temp_y;
+	int x_min, x_max, y_min, y_max;
 
-	cv::Rect box;
 
 	cv::Scalar green = cv::Scalar(0, 255, 0);
 
@@ -489,17 +493,18 @@ int diff_camera(void)
 
 	//3フレーム分読み込む
 	cap >> frame;
-	cv::cvtColor(frame, gray_frame1, cv::COLOR_BGR2GRAY);
-
+	cv::cvtColor(frame, gray_frame1, cv::COLOR_BGR2GRAY);//グレイスケール化
+	
 	cap >> frame;
 	cv::cvtColor(frame, gray_frame2, cv::COLOR_BGR2GRAY);
 
 	cap >> frame;
 	cv::cvtColor(frame, gray_frame3, cv::COLOR_BGR2GRAY);
+	
 
 
 
-
+	cout << "start" << endl;
 
 	while (1)
 	{
@@ -510,29 +515,60 @@ int diff_camera(void)
 		//差分1と差分2の結果を比較（論理積）
 		cv::bitwise_and(diff1, diff2, diff);
 
+		cv::namedWindow("diff image", cv::WINDOW_NORMAL);
+		imshow("diff image", diff);
+
+
 		//輪郭を抽出
 		cv::findContours(diff, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-		
-		//差分があった点を画像に描写
-		for (int i = 0; i < contours.size(); i++);
-		{
-			box = cv::boundingRect(i);
 
-			cv::rectangle(frame, cv::Point(box.x, box.y), cv::Point(box.x+box.width, box.y+box.height), green, 2);
+		
+		for (int i = 0; i < contours.size(); i++) {
+			temp = contours[i][0];
+			x_min = temp.x;
+			x_max = temp.x;
+			y_min = temp.y;
+			y_max = temp.y;
+
+			for (int j = 1; j < contours[i].size(); j++) {
+				temp = contours[i][j];
+				temp_x = temp.x;
+				temp_y = temp.y;
+
+				if (temp_x < x_min)x_min = temp_x;
+				if (temp_x > x_max)x_max = temp_x;
+				if (temp_x < y_min)y_min = temp_y;
+				if (temp_x > y_max)y_max = temp_y;
+			}
+
+			//小さな差分は取り除く
+			int w = x_max - x_min;
+			int h = y_max - y_min;
+			if (w > 30 && h > 30)
+			{
+				cv::rectangle(frame, Point(x_min, y_min), Point(x_max, y_max), green, 2); //四角で囲む
+			}
+
+
 		}
 
 
 		//表示
-		cv::namedWindow("diff image", cv::WINDOW_NORMAL);
-		cv::imshow("diff image", frame);
+		cv::namedWindow("result", cv::WINDOW_NORMAL);
+		cv::imshow("result", frame);
+
+
 
 		//画像を1フレームずらす
-		gray_frame2.copyTo(gray_frame1, gray_frame2);
-		gray_frame3.copyTo(gray_frame2, gray_frame3);
+		gray_frame2.copyTo(gray_frame1, gray_frame2); //フレーム2をフレーム1へ
+		gray_frame3.copyTo(gray_frame2, gray_frame3); //フレーム3をフレーム2へ
 		cap >> frame;
 		cv::cvtColor(frame, gray_frame3, cv::COLOR_BGR2GRAY);
+		
 
 
+		contours.clear();
+		contours.shrink_to_fit();
 
 		if (waitKey(30) >= 0) break;
 	}
@@ -544,6 +580,120 @@ int diff_camera(void)
 
 	return 0;
 }
+
+
+
+//https://code-database.com/knowledges/116
+
+//int diff_camera(void)
+//{
+//	Mat frame;
+//	Mat gray_frame1, gray_frame2, gray_frame3;
+//	Mat diff1, diff2;
+//	Mat diff;
+//	Mat diff_out;
+//	vector< vector<cv::Point> > contours;
+//	vector<cv::Vec4i> hierarchy;
+//	Point temp;
+//	int temp_x, temp_y;
+//	int x_min, x_max, y_min, y_max;
+//
+//	cv::Rect box;
+//
+//	cv::Scalar green = cv::Scalar(0, 255, 0);
+//
+//	VideoCapture cap(0, cv::CAP_DSHOW);
+//	if (!cap.isOpened())return -1;
+//
+//
+//	//3フレーム分読み込む
+//	cap >> frame;
+//	cv::cvtColor(frame, gray_frame1, cv::COLOR_BGR2GRAY);
+//
+//	waitKey(30);
+//
+//	cap >> frame;
+//	cv::cvtColor(frame, gray_frame2, cv::COLOR_BGR2GRAY);
+//	waitKey(30);
+//
+//	cap >> frame;
+//	cv::cvtColor(frame, gray_frame3, cv::COLOR_BGR2GRAY);
+//
+//
+//
+//	cout << "start" << endl;
+//
+//	while (1)
+//	{
+//		//フレームの差を求める
+//		cv::absdiff(gray_frame1, gray_frame2, diff1);
+//		cv::absdiff(gray_frame2, gray_frame3, diff2);
+//
+//		//差分1と差分2の結果を比較（論理積）
+//		cv::bitwise_and(diff1, diff2, diff);
+//
+//		cv::threshold(diff, diff_out, 4, 255, CV_THRESH_BINARY);
+//		imshow("diff", diff);
+//		imshow("diff_out", diff_out);
+//
+//		dilate(diff_out, diff_out, 3,Point(-1,-1),3);
+//
+//		//輪郭を抽出
+//		cv::findContours(diff_out, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+//
+//		//差分があった点を画像に描写
+//		cout << contours.size() << endl;
+//		for (int i = 0; i < contours.size(); i++){
+//			temp = contours[i][0];
+//			x_min = temp.x;
+//			x_max = temp.x;
+//			y_min = temp.y;
+//			y_max = temp.y;
+//
+//			for (int j = 1; j < contours[i].size(); j++) {
+//				temp  = contours[i][j];
+//				temp_x = temp.x;
+//				temp_y = temp.y;
+//
+//				if (temp_x < x_min)x_min = temp_x;
+//				if (temp_x > x_max)x_max = temp_x;
+//				if (temp_x < y_min)y_min = temp_y;
+//				if (temp_x > y_max)y_max = temp_y;
+//
+//				//	cv::rectangle(frame, cv::Point(contours[i].x, box.y), cv::Point(box.x+box.width, box.y+box.height), green, 2);
+//				
+//			}
+//			cv::rectangle(frame, Point(x_min,y_min), Point(x_max,y_max), green, 2);
+//		}
+//		
+//		//表示
+//		cv::namedWindow("diff image", cv::WINDOW_NORMAL);
+//		cv::imshow("diff image", frame);
+//
+//		//画像を1フレームずらす
+//		gray_frame2.copyTo(gray_frame1, gray_frame2);
+//		gray_frame3.copyTo(gray_frame2, gray_frame3);
+//		cap >> frame;
+//		cv::cvtColor(frame, gray_frame3, cv::COLOR_BGR2GRAY);
+//
+//
+//		contours.clear();
+//		contours.shrink_to_fit();
+//		if (waitKey(30) >= 0) break;
+//	}
+//
+//
+//	cap.release();//読み込み用のオブジェクトを解放
+//	cv::destroyAllWindows();//ウィンドウを破棄
+//
+//
+//	return 0;
+//}
+
+
+
+
+
 
 
 
