@@ -180,7 +180,7 @@ int lecture(void)
 
 
 
-
+//第2回授業
 int disply_movie(void)
 {
 	int i = 0;
@@ -348,16 +348,16 @@ int result_RGB_HSV(void)
 		{
 			for (int x = 0; x < img.cols; x++)
 			{
-				r = img.at<cv::Vec3b>(y, x)[0];//R
+				b = img.at<cv::Vec3b>(y, x)[0];//B
 				g = img.at<cv::Vec3b>(y, x)[1];//G
-				b = img.at<cv::Vec3b>(y, x)[2];//B
+				r = img.at<cv::Vec3b>(y, x)[2];//R
 
 
 
 				//printf("R=%d\tG=%d\tB=%d\n", r, g, b);
 
 				
-				of_rgb << "R =" << r << "\t" << "G=" << g << "\t" << "B=" << b << "\n";//テキストファイルに書き出す
+				of_rgb << "B =" << r << "\t" << "G=" << g << "\t" << "R=" << b << "\n";//テキストファイルに書き出す
 			
 			
 			}
@@ -385,24 +385,27 @@ int result_RGB_HSV(void)
 
 
 
-
+//第4回
+//顔を検出して，ファイルに保存
 int face_detection(void)
 {
-	int i = 0;
+	int q = 0;
 	std::string image_name;
 	Mat frame;
-
 	Mat frame_gray;
+	Mat frame_rect;
+
+
+	int x_start = 0;
+	int y_start = 0;
+	int x_end = 0;
+	int y_end = 0;
+	int width = 0;
+	int height = 0;
 
 
 
 	VideoCapture cap(0, cv::CAP_DSHOW);
-
-	int w = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	int h = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-
-	//VideoWriter writer("D:\\M1\\Advanced_Food_System_Studies\\1\\movie\\recording.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
-
 	if (!cap.isOpened()) return -1;
 
 
@@ -413,6 +416,7 @@ int face_detection(void)
 
 
 	namedWindow("image", WINDOW_AUTOSIZE);
+	namedWindow("image_rect", WINDOW_AUTOSIZE);
 
 
 	while (1)
@@ -427,37 +431,71 @@ int face_detection(void)
 
 		// gray から顔を探して赤い長方形を img に描画
 		std::vector<cv::Rect> faces;
-		cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30));
+		//cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30));
+		cascade.detectMultiScale(frame_gray, faces, 1.2, 5, 0, Size(20, 20));
 
-		for (auto face : faces)
+
+		/*for (auto face : faces)
 		{
 			cv::rectangle(frame, face, cv::Scalar(0, 0, 255), 2);
+		}*/
+
+
+
+		for (int i = 0; i < faces.size(); i++)
+		{
+
+			x_start = faces[i].x;
+			y_start = faces[i].y;
+			x_end = faces[i].x + faces[i].width;
+			y_end = faces[i].y + faces[i].height;
+			width = faces[i].width;;
+			height = faces[i].height;
+
+
+			cv::rectangle(frame, cv::Point(x_start, y_start), cv::Point(x_end, y_end), cv::Scalar(0, 0, 255), 2);
+
+
+			//顔のみを取り出す
+			frame_rect = Mat(frame, Rect(x_start, y_start, width, height));
+
+			
 		}
 
 
-		cv::imshow("image", frame);
 
 
-		//動画から画像を取り出し，フォルダに保存
-		//image_name = "D:\\M1\\Advanced_Food_System_Studies\\1\\image\\image" + std::to_string(i) + ".png";
-		//cv::imwrite(image_name, frame);
+		if (!frame.empty() && !frame_rect.empty())
+		{
+			cv::imshow("image", frame);
+			cv::imshow("image_rect", frame_rect);
 
 
-		//動画を保存
-		//writer << frame;
+			//リサイズ
+			cv::resize(frame_rect, frame_rect, Point(frame.cols, frame.rows));
+
+
+			//動画から画像を取り出し，フォルダに保存
+			image_name = "D:\\M1\\Advanced_Food_System_Studies\\1\\face_image\\image" + std::to_string(q) + ".png";
+			cv::imwrite(image_name, frame_rect);
+
+		}
+		else
+		{
+			continue;
+		}
 
 
 		if (waitKey(30) >= 0) break;
 
 
 
-		i++;
+		q++;
 
 	}
 
 
 	cap.release();//読み込み用のオブジェクトを解放
-	//writer.release();//書き込み用のオブジェクトを解放
 	cv::destroyAllWindows();//ウィンドウを破棄
 
 	return 0;
@@ -470,6 +508,8 @@ int face_detection(void)
 
 
 
+//第3回授業
+//https://code-database.com/knowledges/116
 
 int diff_camera(void)
 {
@@ -515,13 +555,13 @@ int diff_camera(void)
 		//差分1と差分2の結果を比較（論理積）
 		cv::bitwise_and(diff1, diff2, diff);
 
-		cv::namedWindow("diff image", cv::WINDOW_NORMAL);
+		cv::namedWindow("diff image", cv::WINDOW_AUTOSIZE);
 		imshow("diff image", diff);
 
 
 		//輪郭を抽出
 		cv::findContours(diff, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-
+		
 		
 		for (int i = 0; i < contours.size(); i++) {
 			temp = contours[i][0];
@@ -554,9 +594,8 @@ int diff_camera(void)
 
 
 		//表示
-		cv::namedWindow("result", cv::WINDOW_NORMAL);
+		cv::namedWindow("result", cv::WINDOW_AUTOSIZE);
 		cv::imshow("result", frame);
-
 
 
 		//画像を1フレームずらす
@@ -566,9 +605,6 @@ int diff_camera(void)
 		cv::cvtColor(frame, gray_frame3, cv::COLOR_BGR2GRAY);
 		
 
-
-		contours.clear();
-		contours.shrink_to_fit();
 
 		if (waitKey(30) >= 0) break;
 	}
@@ -689,10 +725,6 @@ int diff_camera(void)
 //
 //	return 0;
 //}
-
-
-
-
 
 
 
