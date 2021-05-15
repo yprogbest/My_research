@@ -17,9 +17,10 @@
 #include <opencv2/imgproc.hpp>
 
 
+#include <atltime.h> //処理時間を計算するために用意
 
-#define IMG_XSIZE 640;
-#define IMG_YSIZE 480;
+
+
 
 
 //プロトタイプ宣言
@@ -30,12 +31,17 @@ int tracker_main(void);
 int result_RGB_HSV(void);
 int face_detection(void);
 int diff_camera(void);
-
+int template_matching();
+void mouse_callback(int event, int x, int y, int flags, void* userdata);
 
 
 
 using namespace cv;
 using namespace std;
+
+
+Rect2i rectangle_value;
+
 
 int main(int argc, const char* argv[])
 {
@@ -94,6 +100,12 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 6:
+				template_matching();
+
+				break;
+
+
 
 			case 99:
 				nFlag = -1;
@@ -124,7 +136,8 @@ int menu_screen()
 	printf("<<3>>:RGB値の書き出し\n");
 	printf("<<4>>:顔検出\n");
 	printf("<<5>>:差分検出\n");
-	printf("<<6>>:○○\n");
+	printf("<<6>>:テンプレートマッチング\n");
+	printf("<<7>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -139,39 +152,10 @@ int menu_screen()
 
 
 
-
+//授業用
 int lecture(void)
 {
-	//std::cout << "Hello" << std::endl;
-	
-	int x, y;
 
-	Mat img;
-	std::string img_name = "D://M1//Advanced_Food_System_Studies//1//image//image27.png";
-	img = cv::imread(img_name);
-
-
-
-	int r;
-	int g;
-	int b;
-
-
-	for (y = 0; y < img.rows; y++)
-	{
-		for (x = 0; x < img.cols; x++)
-		{
-			r = img.at<cv::Vec3b>(y, x)[0];//R
-			g = img.at<cv::Vec3b>(y, x)[1];//G
-			b = img.at<cv::Vec3b>(y, x)[2];//B
-
-			printf("R=%d\tG=%d\tB=%d\n", r, g, b);
-		}
-	}
-
-
-
-	
 
 
 	return 0;
@@ -180,7 +164,7 @@ int lecture(void)
 
 
 
-//第2回授業
+//第2回授業(動画の表示+保存)
 int disply_movie(void)
 {
 	int i = 0;
@@ -387,6 +371,8 @@ int result_RGB_HSV(void)
 
 //第4回
 //顔を検出して，ファイルに保存
+//http://www.ail.cs.gunma-u.ac.jp/ailwiki/index.php?Haar-like%E7%89%B9%E5%BE%B4%E9%87%8F%E3%82%92%E7%94%A8%E3%81%84%E3%81%9F%E3%82%AB%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%89%E5%88%86%E9%A1%9E%E5%99%A8%E3%81%AB%E3%82%88%E3%82%8B%E5%89%8D%E6%96%B9%E8%BB%8A%E4%B8%A1%E3%81%AE%E8%AD%98%E5%88%A5
+
 int face_detection(void)
 {
 	int q = 0;
@@ -416,7 +402,9 @@ int face_detection(void)
 
 
 	namedWindow("image", WINDOW_AUTOSIZE);
-	namedWindow("image_rect", WINDOW_AUTOSIZE);
+	//namedWindow("image_rect", WINDOW_AUTOSIZE);
+	
+
 
 
 	while (1)
@@ -425,21 +413,15 @@ int face_detection(void)
 		cap >> frame;
 
 
-		//グレイ化
+		// グレイスケール
 		cv::cvtColor(frame, frame_gray, cv::COLOR_BGR2GRAY);
 
 
-		// gray から顔を探して赤い長方形を img に描画
+		
 		std::vector<cv::Rect> faces;
-		//cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30));
-		cascade.detectMultiScale(frame_gray, faces, 1.2, 5, 0, Size(20, 20));
 
-
-		/*for (auto face : faces)
-		{
-			cv::rectangle(frame, face, cv::Scalar(0, 0, 255), 2);
-		}*/
-
+		// frame_grayから顔を探す
+		cascade.detectMultiScale(frame_gray, faces);
 
 
 		for (int i = 0; i < faces.size(); i++)
@@ -452,11 +434,11 @@ int face_detection(void)
 			width = faces[i].width;;
 			height = faces[i].height;
 
-
+			// 赤い長方形を frame に描画
 			cv::rectangle(frame, cv::Point(x_start, y_start), cv::Point(x_end, y_end), cv::Scalar(0, 0, 255), 2);
 
 
-			//顔のみを取り出す
+			// 顔のみを取り出す
 			frame_rect = Mat(frame, Rect(x_start, y_start, width, height));
 
 			
@@ -464,21 +446,24 @@ int face_detection(void)
 
 
 
-
-		if (!frame.empty() && !frame_rect.empty())
+		if (!frame.empty())
 		{
+			// frameを表示
 			cv::imshow("image", frame);
-			cv::imshow("image_rect", frame_rect);
 
+			if (!frame_rect.empty())
+			{
+				//リサイズ
+				cv::resize(frame_rect, frame_rect, Point(frame.cols, frame.rows));
 
-			//リサイズ
-			cv::resize(frame_rect, frame_rect, Point(frame.cols, frame.rows));
+				// frame_rectを表示
+				//cv::imshow("image_rect", frame_rect);
 
-
-			//動画から画像を取り出し，フォルダに保存
-			image_name = "D:\\M1\\Advanced_Food_System_Studies\\1\\face_image\\image" + std::to_string(q) + ".png";
-			cv::imwrite(image_name, frame_rect);
-
+				//動画から画像を取り出し，フォルダに保存
+				image_name = "D:\\M1\\Advanced_Food_System_Studies\\1\\face_image\\image" + std::to_string(q) + ".png";
+				cv::imwrite(image_name, frame_rect);
+			}
+		
 		}
 		else
 		{
@@ -508,7 +493,7 @@ int face_detection(void)
 
 
 
-//第3回授業
+//第3回授業(物体追跡（フレーム間差分）)
 //https://code-database.com/knowledges/116
 
 int diff_camera(void)
@@ -729,3 +714,130 @@ int diff_camera(void)
 
 
 
+
+
+
+//第5回授業
+//テンプレートマッチング
+//https://qiita.com/appin/items/0bb42ef108b49e9f72c3
+//https://qiita.com/satsukiya/items/c8828f48be7673007007 
+//http://imgprolab.sys.fit.ac.jp/~yama/imgproc/proc/Document_OpenCVforC_8_2017.pdf (←参考記事)
+
+int template_matching()
+{
+	bool start_capture = false;
+
+
+	vector<Rect2i> all_rectangle_value;
+
+	Mat img;
+	Mat result_img;
+	
+	VideoCapture cap(0);
+
+	cap >> img;
+
+	Mat draw_img = img.clone();
+	string window_name = "example";
+	bool isClick = false;
+	int key;
+	int key2;
+
+	imshow(window_name, img);
+	setMouseCallback(window_name, mouse_callback, &isClick);
+	for (;;) {
+		key = 0;
+
+		// 左ボタンが押されたら描画開始
+		if (isClick == true) {
+			rectangle(draw_img, rectangle_value, Scalar(255, 0, 0), 3, CV_AA);
+		}
+
+		imshow(window_name, draw_img);
+		draw_img = img.clone();
+
+		// qキーが押されたら終了
+		key = waitKey(30);
+		if (key > 0)
+			break;
+	}
+
+	destroyWindow("example");
+
+	start_capture = true;
+
+	
+
+	if (start_capture == true) {
+		Mat last_roi_image(img, Rect(rectangle_value.x, rectangle_value.y, rectangle_value.width, rectangle_value.height));
+
+
+		while (1) {
+
+			cap >> img;
+
+			//テンプレートマッチング
+			cv::matchTemplate(img, last_roi_image, result_img, CV_TM_CCOEFF_NORMED);
+			Point max_pt;
+			double maxVal;
+			cv::minMaxLoc(result_img, NULL, &maxVal, NULL, &max_pt);
+
+			//探索結果の場所に矩形を描画
+			Rect roi_rect(0, 0, rectangle_value.width, rectangle_value.height);
+			roi_rect.x = max_pt.x;
+			roi_rect.y = max_pt.y;
+			cv::rectangle(img, roi_rect, Scalar(0, 255, 255), 2);
+
+			//次フレームでのテンプレートマッチング用のROIを保存
+			Mat roi_image(img, Rect(rectangle_value.x, rectangle_value.y, rectangle_value.width, rectangle_value.height));
+			last_roi_image = roi_image.clone();
+
+			namedWindow("result", WINDOW_AUTOSIZE);
+			cv::imshow("result", img);
+			key2 = waitKey(30);
+			if (key2 >= 0) {
+				break;
+			}
+		}
+
+	}
+
+
+	cap.release();
+	cv::destroyAllWindows();
+
+
+	return 0;
+}
+
+
+
+
+//コールバック関数（マウスで操作）
+void  mouse_callback(int event, int x, int y, int flags, void* userdata)
+{
+	bool *isClick = static_cast<bool *>(userdata);
+
+	if (event == EVENT_LBUTTONDOWN) {
+		*isClick = true;
+		cout << "Draw rectangle\n"
+			<< " start position (x, y) : " << x << ", " << y << endl;
+
+		rectangle_value = Rect2i(x, y, 0, 0);
+	}
+	if (event == EVENT_LBUTTONUP) {
+		*isClick = false;
+		cout << " end   position (x, y) : " << x << ", " << y << endl;
+		cout << " width and height : " << rectangle_value .width<< ", " << rectangle_value.height << endl;
+
+		rectangle_value.width = x - rectangle_value.x;
+		rectangle_value.height = y - rectangle_value.y;
+	}
+	if (event == EVENT_MOUSEMOVE) {
+		if (*isClick) {
+			rectangle_value.width = x - rectangle_value.x;
+			rectangle_value.height = y - rectangle_value.y;
+		}
+	}
+
+}
