@@ -33,6 +33,7 @@ int face_detection(void);
 int diff_camera(void);
 int template_matching();
 void mouse_callback(int event, int x, int y, int flags, void* userdata);
+int hough();
 
 
 
@@ -106,6 +107,11 @@ int main(int argc, const char* argv[])
 				break;
 
 
+			case 7:
+				hough();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -137,7 +143,8 @@ int menu_screen()
 	printf("<<4>>:顔検出\n");
 	printf("<<5>>:差分検出\n");
 	printf("<<6>>:テンプレートマッチング\n");
-	printf("<<7>>:○○\n");
+	printf("<<7>>:Hough変換\n");
+	printf("<<8>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -288,10 +295,6 @@ int tracker_main(void)
 	cv::destroyWindow("tracker");
 	return 0;
 }
-
-
-
-
 
 
 
@@ -485,8 +488,6 @@ int face_detection(void)
 
 	return 0;
 }
-
-
 
 
 
@@ -717,8 +718,8 @@ int diff_camera(void)
 
 
 
-//第5回授業
-//テンプレートマッチング
+//第5回授業×
+//テンプレートマッチング(動画では上手くいかない)
 //https://qiita.com/appin/items/0bb42ef108b49e9f72c3
 //https://qiita.com/satsukiya/items/c8828f48be7673007007 
 //http://imgprolab.sys.fit.ac.jp/~yama/imgproc/proc/Document_OpenCVforC_8_2017.pdf (←参考記事)
@@ -812,7 +813,6 @@ int template_matching()
 
 
 
-
 //コールバック関数（マウスで操作）
 void  mouse_callback(int event, int x, int y, int flags, void* userdata)
 {
@@ -841,3 +841,92 @@ void  mouse_callback(int event, int x, int y, int flags, void* userdata)
 	}
 
 }
+
+
+
+
+
+
+
+//第5回授業〇
+//Hough変換
+//http://maverickproj.web.fc2.com/OpenCV_45.html
+
+int hough() {
+
+	int hr = -1;
+
+
+	cv::Mat src, gray_src, edge;
+	std::vector<cv::Vec4i>lines;
+
+	cv::VideoCapture cap("D:\\M1\\Advanced_Food_System_Studies\\1\\road.mp4");
+
+
+	try {
+
+		while (1) {
+			cap >> src;
+
+			//グレイスケール
+			cv::cvtColor(src, gray_src, COLOR_BGR2GRAY);
+
+			cv::namedWindow("src", 1);
+			cv::imshow("src", src);
+
+			cv::namedWindow("gray", 1);
+			cv::imshow("gray", gray_src);
+
+			//輪郭抽出
+			cv::Canny(src, edge, 300, 350);
+
+			cv::namedWindow("edge", 1);
+			cv::imshow("edge", edge);
+
+			//線分検出
+			cv::HoughLinesP(
+				edge,// 8ビット，シングルチャンネルの2値入力画像
+				lines, // 検出された線分が出力されるベクトル
+				1,// ピクセル単位での距離分解能
+				CV_PI / 180.0,// ラジアン単位での角度分解能
+				80,// 閾値.thresholdを十分に超えている直線のみが出力対象
+				100,// 最小の線分長
+				10 // 2点が同一線分上にあると見なす場合に許容される最大距離
+			);
+
+			//線分描写
+			for (int i = 0; i < lines.size(); i++) {
+				cv::line(src, cv::Point(lines[i][0], lines[i][1]), cv::Point(lines[i][2], lines[i][3]), cv::Scalar(0, 0, 255), 2);
+			}
+
+			cv::namedWindow("Hough", 1);
+			cv::imshow("Hough", src);
+
+
+
+			int key=waitKey(30);
+			if (key > 0) {
+				break;
+			}
+
+
+
+			hr = 0;
+		}
+
+
+	}
+	catch (cv::Exception ex) {
+		std::cout << ex.err << std::endl;
+	}
+
+
+
+	cap.release();
+	cv::destroyAllWindows();
+
+	return hr;
+}
+
+
+
