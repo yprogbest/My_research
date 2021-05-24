@@ -34,6 +34,7 @@ int diff_camera(void);
 int template_matching();
 void mouse_callback(int event, int x, int y, int flags, void* userdata);
 int hough();
+int hough_circle();
 
 
 
@@ -112,6 +113,11 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 8:
+				hough_circle();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -144,7 +150,8 @@ int menu_screen()
 	printf("<<5>>:差分検出\n");
 	printf("<<6>>:テンプレートマッチング\n");
 	printf("<<7>>:Hough変換\n");
-	printf("<<8>>:○○\n");
+	printf("<<8>>:Hough変換【円ver】\n");
+	printf("<<9>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -851,6 +858,8 @@ void  mouse_callback(int event, int x, int y, int flags, void* userdata)
 //第5回授業〇
 //Hough変換
 //http://maverickproj.web.fc2.com/OpenCV_45.html
+//http://whitewell.sakura.ne.jp/OpenCV/py_tutorials/py_imgproc/py_houghlines/py_houghlines.html
+//
 
 int hough() {
 
@@ -878,7 +887,7 @@ int hough() {
 			cv::imshow("gray", gray_src);
 
 			//輪郭抽出
-			cv::Canny(src, edge, 300, 350);
+			cv::Canny(src, edge, 320, 370);
 
 			cv::namedWindow("edge", 1);
 			cv::imshow("edge", edge);
@@ -897,10 +906,20 @@ int hough() {
 			//線分描写
 			for (int i = 0; i < lines.size(); i++) {
 				cv::line(src, cv::Point(lines[i][0], lines[i][1]), cv::Point(lines[i][2], lines[i][3]), cv::Scalar(0, 0, 255), 2);
+
+				//printf("%d\t%d\t%d\t%d\n", lines[i][0], lines[i][1], lines[i][2], lines[i][3]);
 			}
+
 
 			cv::namedWindow("Hough", 1);
 			cv::imshow("Hough", src);
+
+
+
+			//4画面表示
+
+
+
 
 
 
@@ -926,6 +945,110 @@ int hough() {
 	cv::destroyAllWindows();
 
 	return hr;
+}
+
+
+
+
+
+
+
+//第6回授業
+//https://teratail.com/questions/130841
+//https://so-zou.jp/software/tech/library/opencv/retrieval/hough-transform.htm
+//https://so-zou.jp/software/tech/library/opencv/retrieval/hough-transform.htm
+//https://tutorialmore.com/questions-1585722.htm
+//http://beetreehitsuji.hatenablog.com/entry/2017/02/02/175838
+
+int hough_circle() {
+
+	Mat src, src_clone, gray, hsv;
+	vector<Vec3f> circles;
+
+	cv::VideoCapture cap("D:\\M1\\Advanced_Food_System_Studies\\1\\orange_image\\orange_movie.mp4");
+
+	//src = imread("D:\\M1\\Advanced_Food_System_Studies\\1\\orange_image\\orange_input.jpg");
+
+
+
+	while (1) {
+
+		cap >> src;
+
+		src_clone = src.clone();
+
+		cvtColor(src_clone, hsv, CV_BGR2HSV); //hsvに変換
+
+		//hsv分解
+		std::vector<cv::Mat>mat_channels;
+		cv::split(hsv, mat_channels);
+
+		//取り出す色を決定 0 - 30 まで
+		int hue_min = 0;
+		int hue_max = hue_min + 30;
+
+		int hsv_value;
+		int cols = hsv.cols;
+		int rows = hsv.rows;
+
+		for (int row = 0; row < rows; row++) {
+			for (int col = 0; col < cols; col++) {
+				hsv_value = static_cast<int>(mat_channels[0].at<uchar>(row, col));
+
+				//色相(Hue)
+				if (!((hue_min <= hsv_value) && (hsv_value <= hue_max))) {
+					//RGB値を0にする
+					src_clone.at<cv::Vec3b>(row, col)[0] = 0;
+					src_clone.at<cv::Vec3b>(row, col)[1] = 0;
+					src_clone.at<cv::Vec3b>(row, col)[2] = 0;
+				}
+			}
+		}
+
+
+
+		cvtColor(src_clone, gray, CV_BGR2GRAY); //グレイスケール
+
+		GaussianBlur(gray, gray, Size(9, 9), 2, 2);
+
+
+
+		HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 1, 60, 200, 20, 0, 35);
+
+		for (int i = 0; i < circles.size(); i++) {
+
+			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+			int radius = cvRound(circles[i][2]);
+
+			cv::circle(src, center, 3, Scalar(0, 255, 0), -1, 8, 0);//circle center
+			cv::circle(src, center, radius, Scalar(0, 0, 255), 3, 8, 0);//sircle outline
+
+			std::cout << "center: " << center << "\nradius: " << radius << endl;
+		}
+
+
+
+		/*namedWindow("src_clone", CV_WINDOW_AUTOSIZE);
+		imshow("Hough src_clone", src_clone);*/
+		namedWindow("Hough Circle", CV_WINDOW_AUTOSIZE);
+		imshow("Hough Circle", src);
+
+
+
+		int key = waitKey(30);
+		if (key >= 0) {
+			break;
+		}
+
+
+
+	}
+
+
+	cap.release();
+	cv::destroyAllWindows();
+	return 0;
+
 }
 
 
