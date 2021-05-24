@@ -956,7 +956,6 @@ int hough() {
 //第6回授業
 //https://teratail.com/questions/130841
 //https://so-zou.jp/software/tech/library/opencv/retrieval/hough-transform.htm
-//https://so-zou.jp/software/tech/library/opencv/retrieval/hough-transform.htm
 //https://tutorialmore.com/questions-1585722.htm
 //http://beetreehitsuji.hatenablog.com/entry/2017/02/02/175838
 
@@ -998,9 +997,9 @@ int hough_circle() {
 				//色相(Hue)
 				if (!((hue_min <= hsv_value) && (hsv_value <= hue_max))) {
 					//RGB値を0にする
-					src_clone.at<cv::Vec3b>(row, col)[0] = 0;
-					src_clone.at<cv::Vec3b>(row, col)[1] = 0;
-					src_clone.at<cv::Vec3b>(row, col)[2] = 0;
+					src_clone.at<cv::Vec3b>(row, col)[0] = 0; //B
+					src_clone.at<cv::Vec3b>(row, col)[1] = 0; //G
+					src_clone.at<cv::Vec3b>(row, col)[2] = 0; //R
 				}
 			}
 		}
@@ -1009,28 +1008,38 @@ int hough_circle() {
 
 		cvtColor(src_clone, gray, CV_BGR2GRAY); //グレイスケール
 
-		GaussianBlur(gray, gray, Size(9, 9), 2, 2);
+		GaussianBlur(gray, gray, Size(9, 9), 2, 2); //ノイズ除去
 
 
 
-		HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 1, 60, 200, 20, 0, 35);
+		cv::HoughCircles(
+			gray,                 // 入力画像
+			circles,              // 検出された線を格納する領域
+			CV_HOUGH_GRADIENT,    // ハフ変換の種類
+			1,                    // 円の中心を求める計算の解像度
+			60,                   // 中心座標間の最小間隔
+			200,                  // 1番目のパラメータ
+			20,                   // 2番目のパラメータ
+			0,                    // 検出される円の最小半径
+			35);                  //検出される円の最大半径
+
 
 		for (int i = 0; i < circles.size(); i++) {
 
-			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-			int radius = cvRound(circles[i][2]);
+			Point center(cvRound(circles[i][0]), cvRound(circles[i][1])); //中心の座標
+			int radius = cvRound(circles[i][2]);  //半径
 
-			cv::circle(src, center, 3, Scalar(0, 255, 0), -1, 8, 0);//circle center
-			cv::circle(src, center, radius, Scalar(0, 0, 255), 3, 8, 0);//sircle outline
+			cv::circle(src, center, 3, Scalar(0, 255, 0), -1, 8, 0);//中心
+			cv::circle(src, center, radius, Scalar(0, 0, 255), 3, 8, 0);//円周
 
 			std::cout << "center: " << center << "\nradius: " << radius << endl;
 		}
 
 
 
-		/*namedWindow("src_clone", CV_WINDOW_AUTOSIZE);
-		imshow("Hough src_clone", src_clone);*/
-		namedWindow("Hough Circle", CV_WINDOW_AUTOSIZE);
+		/*namedWindow("src_clone", WINDOW_AUTOSIZE);
+		imshow("src_clone", src_clone);*/
+		namedWindow("Hough Circle", WINDOW_AUTOSIZE);
 		imshow("Hough Circle", src);
 
 
