@@ -35,6 +35,7 @@ int template_matching();
 void mouse_callback(int event, int x, int y, int flags, void* userdata);
 int hough();
 int hough_circle();
+int HOG();
 
 
 
@@ -118,6 +119,11 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 9:
+				HOG();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -151,7 +157,8 @@ int menu_screen()
 	printf("<<6>>:テンプレートマッチング\n");
 	printf("<<7>>:Hough変換\n");
 	printf("<<8>>:Hough変換【円ver】\n");
-	printf("<<9>>:○○\n");
+	printf("<<9>>:HOG特徴量\n");
+	printf("<<10>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -169,7 +176,7 @@ int menu_screen()
 //授業用
 int lecture(void)
 {
-
+	
 
 
 	return 0;
@@ -974,6 +981,10 @@ int hough_circle() {
 
 		cap >> src;
 
+		if (src.empty()) {
+			break;
+		}
+
 		src_clone = src.clone();
 
 		cvtColor(src_clone, hsv, CV_BGR2HSV); //hsvに変換
@@ -1021,7 +1032,7 @@ int hough_circle() {
 			200,                  // 1番目のパラメータ
 			20,                   // 2番目のパラメータ
 			0,                    // 検出される円の最小半径
-			35);                  //検出される円の最大半径
+			60);                  //検出される円の最大半径
 
 
 		for (int i = 0; i < circles.size(); i++) {
@@ -1056,6 +1067,77 @@ int hough_circle() {
 
 	cap.release();
 	cv::destroyAllWindows();
+	return 0;
+
+}
+
+
+
+
+
+
+
+
+
+//第7回授業
+//HOG特徴量
+//https://qiita.com/kenmaro/items/1b5f23187cc46b4f28c0
+
+int HOG() {
+	
+	cv::Mat img, gray_img;
+	std::vector<cv::Rect> found;
+	
+	cv::VideoCapture cap("D:\\Experiments\\2020_LiDAR_ZED_FUSION\\output_data\\image_to_movie_20201117_Container_around_workshop_high_position\\out_cam1_remap.mov");
+	//cv::VideoCapture cap("D:\\Experiments\\2020_LiDAR_ZED_FUSION\\output_data\\image_to_movie_20201223112457\\movie_stereo_cam1.mov");
+
+	if (!cap.isOpened()) {
+		std::cout << "There is no image" << std::endl;
+		return -1;
+	}
+
+
+	while (1) {
+		cap >> img;
+
+		if (img.empty()) {
+			break;
+		}
+
+		cv::cvtColor(img, gray_img, CV_BGR2GRAY);
+
+		cv::HOGDescriptor hog;
+		//hog.setSVMDetector(cv::HOGDescriptor::getDaimlerPeopleDetector());
+		hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+		hog.detectMultiScale(gray_img, found);
+
+
+
+		for (int i = 0; i < found.size(); i++) {
+
+			cv::Rect r = found[i];
+			rectangle(img, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
+		}
+
+		
+
+		namedWindow("HOG", WINDOW_AUTOSIZE);
+		imshow("HOG", img);
+
+		int k = cvWaitKey(30);
+		if (k >= 0) {
+			break;
+		}
+
+	}
+
+
+
+	cap.release();
+	destroyAllWindows();
+
+
+
 	return 0;
 
 }
