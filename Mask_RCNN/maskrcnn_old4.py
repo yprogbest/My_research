@@ -33,7 +33,7 @@ def apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5):
         mask_y_len = mask_image.shape[0]
         mask_x_len = mask_image.shape[1]
 
-
+    
     f_object_name.write(label + "\n")
 
     # extract coodinates of different colors
@@ -52,11 +52,13 @@ def apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5):
     f_object_name.write("-\n")
 
 
-
     print(image.shape)
 
 
     return mask_image
+
+
+
 
 
 
@@ -72,6 +74,7 @@ def main():
 
     #write only object name
     text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name/"
+
 
 
     #CLASS_NAMES =['BG', 'person', 'container']
@@ -140,10 +143,13 @@ def main():
 
 
 
+
+
     while True:
         #open file
         text  = text_dir + "result" + str(num) + ".txt"
         f = open(text, "w")
+
 
         #open file
         text_object_name  = text_object_name_dir + "result_object_name" + str(num) + ".txt"
@@ -172,70 +178,49 @@ def main():
         '''
 
         N = r['rois'].shape[0]
-        result_image = image.copy()
-        colors = visualize.random_colors(N)
 
         for i in range(0, N):
             classID = r["class_ids"][i]
             label = CLASS_NAMES[classID]
             mask = r["masks"][:, :, i]
-            #color = COLORS[classID][::-1]
+            color = COLORS[classID][::-1]
 
-            #edit 2021/6/5
-            color = colors[i]
-            rgb = (round(color[0] * 255), round(color[1] * 255), round(color[2] * 255))
-
-            #Rect
-            visualize.draw_box(result_image, r['rois'][i], rgb)
-
-            #Label & Score
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            text = CLASS_NAMES[r['class_ids'][i]] + ':' + str(r['scores'][i])
-            cv2.putText(result_image, text,
-            (r['rois'][i][1],r['rois'][i][0]), font, 0.5, rgb, 2, cv2.LINE_AA)
-
-            #Mask
             image = apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5)
 
+            # image = visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
+            #                     CLASS_NAMES, r['scores'])
+
+
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        for i in range(0, len(r["scores"])):
+            (startY, startX, endY, endX) = r["rois"][i]
+            classID = r["class_ids"][i]
+            label = CLASS_NAMES[classID]
+            score = r["scores"][i]
+            color = [int(c) for c in np.array(COLORS[classID]) * 255]
+
+            cv2.rectangle(image, (startX, startY), (endX, endY), color, 2)
+            text = "{}: {:.3f}".format(label, score)
+            y = startY - 10 if startY - 10 > 10 else startY + 10
+            cv2.putText(image, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX,
+                0.6, color, 2)
+
+
         
-
-
-
-        result_image = cv2.cvtColor(result_image, cv2.COLOR_RGB2BGR)
-
-        # for i in range(0, len(r["scores"])):
-        #     (startY, startX, endY, endX) = r["rois"][i]
-        #     classID = r["class_ids"][i]
-        #     label = CLASS_NAMES[classID]
-        #     score = r["scores"][i]
-
-        #     #edit 2021/6/5
-        #     color = colors[i]
-        #     rgb = (round(color[0] * 255), round(color[1] * 255), round(color[2] * 255))
-
-        #     #color = [int(c) for c in np.array(COLORS[classID]) * 255]
-
-        #     cv2.rectangle(image, (startX, startY), (endX, endY), color, 2)
-        #     text = "{}: {:.3f}".format(label, score)
-        #     y = startY - 10 if startY - 10 > 10 else startY + 10
-        #     cv2.putText(image, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX,
-        #         0.6, color, 2)
-
-
-        #save
-    
-
-        cv2.imshow("Output", result_image)
-        #print(image.shape)
-        video.write(result_image)
-        #cv2.waitKey()
-
         num = num + 1
 
         f.close()
         f_object_name.close()
+    
 
+        cv2.imshow("Output", image)
+        print(image.shape)
 
+        #save
+        video.write(image)
+        #cv2.waitKey()
+        
         key = cv2.waitKey(30)
         if key>=0:
             break
