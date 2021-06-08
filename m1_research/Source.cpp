@@ -179,7 +179,7 @@ int seg_pixcel_count() {
 	for (int j = 0; j < img_h; j++) {
 		for (int i = 0; i < img_w; i++) {
 
-			if (mask_img.at<cv::Vec3b>(j, i)[0] <= 127 && mask_img.at<cv::Vec3b>(j, i)[1] <= 127 && mask_img.at<cv::Vec3b>(j, i)[1] <= 127) {
+			if (mask_img.at<cv::Vec3b>(j, i)[0] <= 127 && mask_img.at<cv::Vec3b>(j, i)[1] <= 127 && mask_img.at<cv::Vec3b>(j, i)[2] <= 127) {
 
 				mask_back_count++;
 			}
