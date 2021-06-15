@@ -86,6 +86,10 @@ kaiming He, Ross Girshick らにより提案され
 ![image](https://user-images.githubusercontent.com/82224433/121768672-59631580-cb9a-11eb-9aae-70a8ab4dc792.png)
 
 
+##### Mask R-CNNの問題点
+- バウンディングボックスを生成してから，その範囲内の画素を認識する，2ステップの工程を踏むことで，物体の認識を行っている．そのため，処理速度が遅いという問題点がある．
+- 今後は，処理速度がMask RCNNよりも高速かつ，ROS対応のYOLACTについて調べていく！<br>![image](https://user-images.githubusercontent.com/82224433/121992328-63745680-cddc-11eb-86d9-8f23b4251362.png)
+
 
 
 
