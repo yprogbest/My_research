@@ -7,6 +7,7 @@
 #include <process.h>
 #include <time.h>
 #include <random>
+#include <atltime.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -36,6 +37,9 @@ void mouse_callback(int event, int x, int y, int flags, void* userdata);
 int hough();
 int hough_circle();
 int HOG();
+int template_matting();
+int template_ssd();
+int stereo_distance();
 
 
 
@@ -124,6 +128,22 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 10:
+				template_matting();
+
+				break;
+
+			case 11:
+
+				template_ssd();
+
+				break;
+
+			case 12:
+				stereo_distance();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -158,7 +178,10 @@ int menu_screen()
 	printf("<<7>>:Hough変換\n");
 	printf("<<8>>:Hough変換【円ver】\n");
 	printf("<<9>>:HOG特徴量\n");
-	printf("<<10>>:○○\n");
+	printf("<<10>>:テンプレートマッチング\n");
+	printf("<<11>>:テンプレートマッチング高速化\n");
+	printf("<<12>>:ステレオカメラによる距離算出\n");
+	printf("<<12>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -279,12 +302,13 @@ int tracker_main(void)
 	cap >> frame;
 	imshow("frame", frame);
 
-	roi = selectROI("frame", frame);
-	tracker->init(frame, roi);
+	roi = cv::selectROI("frame", frame);
+	tracker->cv::Tracker::init(frame, roi);
 
 	cv::destroyWindow("frame");
 
 	while (true) {
+
 		cap >> frame;
 		if (frame.empty())
 		{
@@ -292,9 +316,8 @@ int tracker_main(void)
 		}
 
 
-
 		//更新
-		tracker->update(frame, roi);
+		tracker->cv::Tracker::update(frame, roi);
 
 		//結果を表示
 		cv::rectangle(frame, roi, color, 1, 1);
@@ -302,7 +325,7 @@ int tracker_main(void)
 		cv::imshow("tracker", frame);
 
 
-		if (waitKey(30) >= 0) break;
+		if (cv::waitKey(30) >= 0) break;
 
 	}
 
@@ -1082,13 +1105,15 @@ int hough_circle() {
 //第7回授業
 //HOG特徴量
 //https://qiita.com/kenmaro/items/1b5f23187cc46b4f28c0
+//https://algorithm.joho.info/image-processing/hog-feature-value/
 
 int HOG() {
 	
 	cv::Mat img, gray_img;
 	std::vector<cv::Rect> found;
+
 	
-	cv::VideoCapture cap("D:\\Experiments\\2020_LiDAR_ZED_FUSION\\output_data\\image_to_movie_20201117_Container_around_workshop_high_position\\out_cam1_remap.mov");
+	cv::VideoCapture cap("D:\\Experiments\\2020_LiDAR_ZED_FUSION\\output_data\\image_to_movie_20201106_Container_around_workshop\\out_cam1_remap.mov");
 	//cv::VideoCapture cap("D:\\Experiments\\2020_LiDAR_ZED_FUSION\\output_data\\image_to_movie_20201223112457\\movie_stereo_cam1.mov");
 
 	if (!cap.isOpened()) {
@@ -1119,7 +1144,6 @@ int HOG() {
 			rectangle(img, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
 		}
 
-		
 
 		namedWindow("HOG", WINDOW_AUTOSIZE);
 		imshow("HOG", img);
@@ -1144,3 +1168,524 @@ int HOG() {
 
 
 
+
+
+
+
+double IoU(cv::Point2i a_tl, cv::Point2i a_br, cv::Point2i b_tl, cv::Point2i b_br) {
+
+	int dx1, dy1, dx2, dy2;
+	int dx, dy;
+	int d;
+
+	double iou;
+
+
+	if (a_tl.x <= b_tl.x) {
+		dx1 = b_tl.x;
+	}
+	else {
+		dx1 = a_tl.x;
+	}
+
+	if (a_tl.x + a_br.x <= b_tl.x + b_br.x) {
+		dx2 = a_tl.x + a_br.x;
+	}
+	else {
+		dx2 = b_tl.x + b_br.x;
+	}
+
+
+	if (a_tl.y <= b_tl.y) {
+		dy1 = b_tl.y;
+	}
+	else {
+		dy1 = a_tl.y;
+	}
+
+
+	if (a_tl.y + a_br.y <= b_tl.y + b_br.y) {
+		dx2 = a_tl.y + a_br.y;
+	}
+	else {
+		dx2 = b_tl.y + b_br.y;
+	}
+
+
+
+	dx = dx2 - dx1;
+	dy = dy2 - dy1;
+
+	d = dx*dy;
+
+
+	iou = (double)d / (double)((a_br.x*a_br.y + b_br.x*b_br.y - d));
+
+
+	return iou;
+
+}
+
+
+
+
+
+
+
+
+//第8回授業
+//http://imgprolab.sys.fit.ac.jp/~yama/imgproc/proc/Document_OpenCVforC_8_2017.pdf
+
+
+int template_matting() {
+	CFileTime cTimeStart, cTimeEnd;
+	CFileTimeSpan cTimeSpan;
+	cTimeStart = CFileTime::GetCurrentTime();           // 現在時刻
+
+	double r;
+	Point pos;
+	Rect roi;
+
+	cv::VideoCapture cap("D:\\M1\\Advanced_Food_System_Studies\\1\\image_6_16.mp4");
+	
+
+	Mat image;
+	string image_folder = "D:\\M1\\Advanced_Food_System_Studies\\1\\";
+	Mat template_image;
+	string template_image_name = "template_image.png";
+
+	template_image = cv::imread(image_folder + template_image_name);
+
+	Mat limage;
+	Mat dst;
+
+	
+
+	while (1) {
+
+		cap >> image;
+		if (image.empty()) {
+			break;
+		}
+
+		double fMin = 20000.0;
+
+		int rows = image.rows - template_image.rows + 1;
+		int cols = image.cols - template_image.cols + 1;
+
+
+		for (int y = 0; y < rows; y++) {
+			for (int x = 0; x < cols; x++) {
+
+				roi = Rect(x, y, template_image.cols, template_image.rows);
+				limage = Mat(image, roi); //元の画像から，テンプレート画像の範囲のみを取り出す
+
+				cv::absdiff(limage, template_image, dst);//テンプレート画像と比較する
+				r = sum(dst)[0];//差分画像の1つの色のみの合計を求める
+
+
+				if (fMin > r) {
+					fMin = r;
+					pos.x = x;
+					pos.y = y;
+				}
+			}
+		}
+
+
+		//printf("%lf\n", fMin);
+
+		if (fMin < 20000) {
+			cv::rectangle(image, Rect(pos.x, pos.y, template_image.cols, template_image.rows), Scalar(255, 255, 255), 2);
+		}
+
+		cv::namedWindow("result", WINDOW_AUTOSIZE);
+		cv::imshow("result", image);
+
+		cv::imshow("template_image", template_image);
+		cv::namedWindow("template_image", WINDOW_AUTOSIZE);
+
+		if (cv::waitKey(30) >= 0) {
+			break;
+		}
+
+		
+
+	}
+
+	cap.release();
+	cv::destroyAllWindows();
+
+
+
+	cTimeEnd = CFileTime::GetCurrentTime();           // 現在時刻
+	cTimeSpan = cTimeEnd - cTimeStart;
+	std::cout << "処理時間:" << cTimeSpan.GetTimeSpan() / 10000000 << "[s]" << std::endl;
+
+	return 0;
+
+}
+
+
+
+
+//int template_matting() {
+//
+//	double r;
+//	Point pos;
+//	Rect roi;
+//
+//	Mat image;
+//	string image_folder = "D:\\M1\\Advanced_Food_System_Studies\\1\\";
+//	string image_name = "image669.png";
+//
+//	Mat template_image;
+//	string template_image_name = "template_image.png";
+//
+//	image = cv::imread(image_folder + image_name);
+//	template_image = cv::imread(image_folder + template_image_name);
+//
+//	Mat limage;
+//	Mat dst;
+//
+//	double rMin = 10000.0;
+//
+//	int rows = image.rows - template_image.rows + 1;
+//	int cols = image.cols - template_image.cols + 1;
+//
+//
+//	for (int y = 0; y < rows; y++) {
+//		for (int x = 0; x < cols; x++) {
+//
+//			roi = Rect(x, y, template_image.cols, template_image.rows);
+//			limage = Mat(image, roi); //元の画像から，テンプレート画像の範囲のみを取り出す
+//
+//			cv::absdiff(limage, template_image, dst);//テンプレート画像と比較する
+//			r = sum(dst)[0];
+//
+//			if (rMin > r) {
+//				pos.x = x;
+//				pos.y = y;
+//			}
+//		}
+//	}
+//
+//
+//	cv::rectangle(image, Rect(pos.x, pos.y, template_image.cols, template_image.rows), Scalar(255, 255, 255), 2);
+//
+//	cv::namedWindow("result", WINDOW_AUTOSIZE);
+//	cv::namedWindow("template_image", WINDOW_AUTOSIZE);
+//
+//	cv::imshow("result", image);
+//	cv::imshow("template_image", template_image);
+//
+//
+//	cv::waitKey(0);
+//
+//	return 0;
+//
+//}
+
+
+
+
+
+
+
+//第9回
+//https://www.robonchu.info/entry/2018/05/12/155455
+//http://imgprolab.sys.fit.ac.jp/~yama/imgproc/lec/imgproc_patternrecog_2.pdf
+
+
+//テンプレートマッチング高速化
+int template_ssd() {
+	CFileTime cTimeStart, cTimeEnd;
+	CFileTimeSpan cTimeSpan;
+	cTimeStart = CFileTime::GetCurrentTime();           // 現在時刻
+	
+	double r = 0;
+	Point pos;
+	Rect roi;
+
+	cv::VideoCapture cap("D:\\M1\\Advanced_Food_System_Studies\\1\\image_6_16.mp4");
+
+	int box_num = 0;
+	int frame_count = 0;
+
+	Mat image;
+	string image_folder = "D:\\M1\\Advanced_Food_System_Studies\\1\\";
+	Mat template_image;
+	string template_image_name = "template_image.png";
+
+	template_image = cv::imread(image_folder + template_image_name);
+
+	Mat limage;
+	Mat dst;
+
+
+
+
+	while (1) {
+
+		cap >> image;
+		if (image.empty()) {
+			break;
+		}
+
+		int break_frag = 0;
+		//double fMin = 20000.0;
+		double fMin;
+
+		int rows = image.rows - template_image.rows + 1;
+		int cols = image.cols - template_image.cols + 1;
+
+		if (frame_count > 0) {
+			fMin = fMin + 1500.0;
+		}
+
+		for (int y = 0; y < rows; y++) {
+
+			for (int x = 0; x < cols; x++) {
+
+				roi = Rect(x, y, template_image.cols, template_image.rows);
+				limage = Mat(image, roi); //元の画像から，テンプレート画像の範囲のみを取り出す
+
+				cv::absdiff(limage, template_image, dst); //テンプレート画像と比較する
+
+				if (box_num == 0) {
+					r = sum(dst)[0];
+					fMin = r;
+				}
+				
+
+				if (box_num > 0) {
+
+					for (int j = 0; j < dst.rows; j++) {
+						for (int i = 0; i < dst.cols; i++) {
+
+							r += dst.at<Vec3b>(j, i)[0];
+							//printf("%lf\n", r);
+
+							if (r > fMin) {
+								//printf("%lf\n",fMin);
+								break_frag = 1;
+								break;
+							}
+						}
+
+						if (break_frag == 1) {
+							//printf("Break\n");
+							break;
+						}
+
+					}
+
+				}
+				
+
+				//printf("%lf\n", break_frag);
+
+
+				break_frag = 0;
+				//printf("%lf\n",r);
+
+
+				if (fMin >= r) {
+					fMin = r;
+					pos.x = x;
+					pos.y = y;
+				}
+
+				r = 0.0;
+				box_num++;
+			}
+		}
+
+
+		//printf("%lf\n", fMin);
+
+		if (fMin < 12000.0) {
+			cv::rectangle(image, Rect(pos.x, pos.y, template_image.cols, template_image.rows), Scalar(255, 255, 255), 2);
+		}
+
+
+		cv::namedWindow("result", WINDOW_AUTOSIZE);
+		cv::imshow("result", image);
+
+		cv::imshow("template_image", template_image);
+		cv::namedWindow("template_image", WINDOW_AUTOSIZE);
+
+		if (cv::waitKey(30) >= 0) {
+			break;
+		}
+
+
+		frame_count++;
+
+	}
+
+	cap.release();
+	cv::destroyAllWindows();
+
+
+
+	cTimeEnd = CFileTime::GetCurrentTime();           // 現在時刻
+	cTimeSpan = cTimeEnd - cTimeStart;
+	std::cout << "処理時間:" << cTimeSpan.GetTimeSpan() / 10000000 << "[s]" << std::endl;
+
+	return 0;
+}
+
+
+
+
+
+
+
+//第10回
+//https://toragi.cqpub.co.jp/Portals/0/backnumber/2019/03/p047.pdf
+//http://whitewell.sakura.ne.jp/OpenCV/py_tutorials/py_calib3d/py_depthmap/py_depthmap.html
+//https://cvtech.cc/centroid/
+//https://plant-raspberrypi3.hatenablog.com/entry/2018/11/13/185057
+
+int stereo_distance() {
+	
+	float T = 12; //カメラ間の距離
+	float F = 255; //焦点距離
+	//float Z = 60; //物体距離
+	float D;//ピクセル誤差
+
+	//推定後
+	float f;
+	float z;
+
+
+	cv::VideoCapture cap(0);
+
+	if (!cap.isOpened()) {
+		return -1;
+	}
+
+	cv::Mat image;
+	cv::Mat left_image, right_image;
+	cv::Mat left_image_gray, right_image_gray;
+	cv::Mat mask1, mask2;
+	
+
+
+	//顔認識用のカスケードを用意
+	std::string cascade_path = "C:\\opencv-3.4.10\\opencv-3.4.10\\sources\\samples\\winrt\\FaceDetection\\FaceDetection\\Assets\\haarcascade_frontalface_alt.xml";
+	cv::CascadeClassifier cascade;
+	cascade.load(cascade_path);
+
+	std::vector<cv::Rect> left_faces;
+	std::vector<cv::Rect> right_faces;
+
+	int x_start_left = 0;
+	int y_start_left = 0;
+	int x_end_left = 0;
+	int y_end_left = 0;
+	int width_left = 0;
+	int height_left = 0;
+
+	int x_start_right = 0;
+	int y_start_right = 0;
+	int x_end_right = 0;
+	int y_end_right = 0;
+	int width_right = 0;
+	int height_right = 0;
+
+	//重心
+	cv::Point2f pt1, pt2;
+
+
+	while(1) {
+		cap >> image;
+
+		left_image = image(cv::Rect(0, 0, image.cols / 2, image.rows));
+		right_image = image(cv::Rect(image.cols / 2, 0, image.cols / 2, image.rows));
+
+		// グレイスケール
+		cv::cvtColor(left_image, left_image_gray, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(right_image, right_image_gray, cv::COLOR_BGR2GRAY);
+
+
+		cascade.detectMultiScale(left_image_gray, left_faces);
+		cascade.detectMultiScale(right_image_gray, right_faces);
+
+
+
+		if (left_faces.size() > 0 && right_faces.size() > 0) {
+
+			for (int i = 0; i < left_faces.size(); i++) {
+
+				x_start_left = left_faces[i].x;
+				y_start_left = left_faces[i].y;
+				x_end_left = left_faces[i].x + left_faces[i].width;
+				y_end_left = left_faces[i].y + left_faces[i].height;
+				width_left = left_faces[i].width;;
+				height_left = left_faces[i].height;
+
+
+				x_start_right = right_faces[i].x;
+				y_start_right = right_faces[i].y;
+				x_end_right = right_faces[i].x + right_faces[i].width;
+				y_end_right = right_faces[i].y + right_faces[i].height;
+				width_right = right_faces[i].width;;
+				height_right = right_faces[i].height;
+
+				// 赤い長方形を frame に描画
+				cv::rectangle(left_image, cv::Point(x_start_left, y_start_left), cv::Point(x_end_left, y_end_left), cv::Scalar(0, 0, 255), 2);
+				cv::rectangle(right_image, cv::Point(x_start_right, y_start_right), cv::Point(x_end_right, y_end_right), cv::Scalar(0, 0, 255), 2);
+
+
+				//重心を求める
+				//左
+				pt1 = cv::Point2f(x_start_left + (1.0 / 2.0)*width_left, y_start_left + (1.0 / 2.0)*height_left);
+				pt2 = cv::Point2f(x_start_right + (1.0 / 2.0)*width_right, y_start_right + (1.0 / 2.0)*height_right);
+
+				//重心を描写
+				cv::circle(left_image, pt1, 5, cv::Scalar(100), 2, 4);
+				cv::circle(right_image, pt2, 5, cv::Scalar(100), 2, 4);
+
+				//計算
+				D = pt1.x - pt2.x;//ピクセル誤差
+
+				//焦点距離
+				//f = Z*D / T;
+
+				//推定距離
+				z = F*T/D;
+
+				//std::cout << D << std::endl; //ピクセル誤差
+				//std::cout << f << std::endl; //標準出力
+				std::cout << int(z) << "m"<<  std::endl; //標準出力
+			}
+
+		}
+		
+
+		if (!image.empty()) {
+			cv::namedWindow("left_image", WINDOW_AUTOSIZE);
+			cv::imshow("left_image", left_image);
+			cv::namedWindow("right_image", WINDOW_AUTOSIZE);
+			cv::imshow("right_image", right_image);
+
+		}
+		
+		
+
+
+		int k = cv::waitKey(30);
+		if (k >= 0) {
+			break;
+		}
+	}
+
+
+
+	cap.release();
+	cv::destroyAllWindows();
+
+	return 0;
+}
