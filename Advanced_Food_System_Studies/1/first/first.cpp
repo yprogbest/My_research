@@ -40,6 +40,10 @@ int HOG();
 int template_matting();
 int template_ssd();
 int stereo_distance();
+int stereo_gnuplot();
+unsigned _stdcall thread_gnuplot(void *p);
+int stereo_matching();
+int photo_hunt();
 
 
 
@@ -47,7 +51,20 @@ using namespace cv;
 using namespace std;
 
 
+struct stereo {
+	float x;
+	float y;
+	float z;
+};
+
+
 Rect2i rectangle_value;
+int n_flag_thread_gnuplot_exit;
+HANDLE hThread_gnuplot;
+std::vector<struct stereo> all_xyz;
+
+
+
 
 
 int main(int argc, const char* argv[])
@@ -144,6 +161,17 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 13:
+				stereo_gnuplot();
+
+
+				break;
+
+			case 14:
+				photo_hunt();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -181,7 +209,9 @@ int menu_screen()
 	printf("<<10>>:テンプレートマッチング\n");
 	printf("<<11>>:テンプレートマッチング高速化\n");
 	printf("<<12>>:ステレオカメラによる距離算出\n");
-	printf("<<12>>:○○\n");
+	printf("<<13>>:ステレオカメラによる距離算出 グラフに表示\n");
+	printf("<<14>>:間違い探し\n");
+	printf("<<15>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -1659,7 +1689,7 @@ int stereo_distance() {
 
 				//std::cout << D << std::endl; //ピクセル誤差
 				//std::cout << f << std::endl; //標準出力
-				std::cout << int(z) << "m"<<  std::endl; //標準出力
+				std::cout << int(z) << " cm"<<  std::endl; //標準出力
 			}
 
 		}
@@ -1689,3 +1719,451 @@ int stereo_distance() {
 
 	return 0;
 }
+
+
+
+
+
+
+//第11回
+//マルチスレッド（gnuplot）
+//https://vislab.jp/hiura/lec/iip/geometry.pdf
+
+int stereo_gnuplot() {
+
+	float T = 12; //カメラ間の距離
+	float F = 255; //焦点距離
+	//float Z = 60; //物体距離
+	float D;//ピクセル誤差
+
+	//推定後
+	float f;
+
+	struct stereo xyz;
+
+
+	cv::VideoCapture cap(0);
+
+	if (!cap.isOpened()) {
+		return -1;
+	}
+
+	cv::Mat image;
+	cv::Mat left_image, right_image;
+	cv::Mat left_image_gray, right_image_gray;
+	cv::Mat mask1, mask2;
+
+
+
+	//顔認識用のカスケードを用意
+	std::string cascade_path = "C:\\opencv-3.4.10\\opencv-3.4.10\\sources\\samples\\winrt\\FaceDetection\\FaceDetection\\Assets\\haarcascade_frontalface_alt.xml";
+	cv::CascadeClassifier cascade;
+	cascade.load(cascade_path);
+
+	std::vector<cv::Rect> left_faces;
+	std::vector<cv::Rect> right_faces;
+
+	int x_start_left = 0;
+	int y_start_left = 0;
+	int x_end_left = 0;
+	int y_end_left = 0;
+	int width_left = 0;
+	int height_left = 0;
+
+	int x_start_right = 0;
+	int y_start_right = 0;
+	int x_end_right = 0;
+	int y_end_right = 0;
+	int width_right = 0;
+	int height_right = 0;
+
+	//重心
+	cv::Point2f pt1, pt2;
+
+
+	n_flag_thread_gnuplot_exit = 0;
+	hThread_gnuplot = (HANDLE)_beginthreadex(NULL, 0, thread_gnuplot, NULL, 0, NULL);
+	//hThread_gnuplot = (HANDLE)_beginthreadex(NULL, 0, thread_gnuplot, "gnuplot", 0, NULL);
+
+
+
+	while (1) {
+		cap >> image;
+
+		left_image = image(cv::Rect(0, 0, image.cols / 2, image.rows));
+		right_image = image(cv::Rect(image.cols / 2, 0, image.cols / 2, image.rows));
+
+		// グレイスケール
+		cv::cvtColor(left_image, left_image_gray, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(right_image, right_image_gray, cv::COLOR_BGR2GRAY);
+
+
+		cascade.detectMultiScale(left_image_gray, left_faces);
+		cascade.detectMultiScale(right_image_gray, right_faces);
+
+
+
+		if (left_faces.size() > 0 && right_faces.size() > 0) {
+
+			for (int i = 0; i < left_faces.size(); i++) {
+
+				x_start_left = left_faces[i].x;
+				y_start_left = left_faces[i].y;
+				x_end_left = left_faces[i].x + left_faces[i].width;
+				y_end_left = left_faces[i].y + left_faces[i].height;
+				width_left = left_faces[i].width;
+				height_left = left_faces[i].height;
+
+
+				x_start_right = right_faces[i].x;
+				y_start_right = right_faces[i].y;
+				x_end_right = right_faces[i].x + right_faces[i].width;
+				y_end_right = right_faces[i].y + right_faces[i].height;
+				width_right = right_faces[i].width;;
+				height_right = right_faces[i].height;
+
+				// 赤い長方形を frame に描画
+				cv::rectangle(left_image, cv::Point(x_start_left, y_start_left), cv::Point(x_end_left, y_end_left), cv::Scalar(0, 0, 255), 2);
+				cv::rectangle(right_image, cv::Point(x_start_right, y_start_right), cv::Point(x_end_right, y_end_right), cv::Scalar(0, 0, 255), 2);
+
+
+				//重心を求める
+				//左
+				pt1 = cv::Point2f(x_start_left + (1.0 / 2.0)*width_left, y_start_left + (1.0 / 2.0)*height_left);
+				pt2 = cv::Point2f(x_start_right + (1.0 / 2.0)*width_right, y_start_right + (1.0 / 2.0)*height_right);
+
+				//重心を描写
+				cv::circle(left_image, pt1, 5, cv::Scalar(100), 2, 4);
+				cv::circle(right_image, pt2, 5, cv::Scalar(100), 2, 4);
+
+				//計算
+				D = pt1.x - pt2.x;//ピクセル誤差
+
+				//焦点距離
+				//f = Z*D / T;
+
+				//推定距離
+				xyz.z = F*T / D;
+
+				xyz.x = ((pt1.x + pt2.x) / 2.0)*(T / D);
+				xyz.y = (pt1.y)*(T / D);
+
+				all_xyz.push_back(xyz);
+
+
+				//std::cout << D << std::endl; //ピクセル誤差
+				//std::cout << f << std::endl; //標準出力
+				std::cout << "z = " << int(xyz.z) << " cm" << std::endl; //標準出力
+				std::cout << "x = "<< int(xyz.x) << " cm" << std::endl; //標準出力
+				//std::cout << int(xyz.y) << " cm" << std::endl; //標準出力
+			}
+
+		}
+
+
+		if (!image.empty()) {
+			cv::namedWindow("left_image", WINDOW_AUTOSIZE);
+			cv::imshow("left_image", left_image);
+			cv::namedWindow("right_image", WINDOW_AUTOSIZE);
+			cv::imshow("right_image", right_image);
+
+		}
+
+
+
+
+		int k = cv::waitKey(30);
+		if (k >= 0) {
+			break;
+		}
+
+
+		if (n_flag_thread_gnuplot_exit == 1) break;
+
+	}
+
+
+	n_flag_thread_gnuplot_exit = 1; //gnuplot 終了
+	CloseHandle(hThread_gnuplot);
+
+	cap.release();
+	cv::destroyAllWindows();
+
+	return 0;
+}
+
+
+
+
+unsigned _stdcall thread_gnuplot(void *p)
+{
+
+
+	FILE *gid;
+
+
+	gid = _popen("C:/Win64App/gnuplot/bin/gnuplot.exe", "w");
+
+
+
+
+	fprintf_s(gid, "set size ratio -1\n");
+	fprintf(gid, "set xrange[0:100]\n");
+	fprintf(gid, "set yrange[0:100]\n");
+	fprintf(gid, "set xlabel 'x[cm]'\n");
+	fprintf(gid, "set ylabel'z[cm]'\n");
+
+
+	fflush(gid);
+
+
+
+
+	while (1) {
+
+		fprintf_s(gid, "plot '-' with points ps 1 title 'Trajectory of object movement'\n");
+
+		for (int k = 0; k < (int)all_xyz.size(); k++) {
+
+			fprintf(gid, "%lf\t%lf\n", all_xyz[k].x, all_xyz[k].z);
+
+		}
+
+		fprintf(gid, "e\n");
+		fflush(gid);
+	
+
+		fflush(gid);
+
+
+		if (n_flag_thread_gnuplot_exit == 1) break;
+
+
+
+		Sleep(10);
+
+	}
+
+
+	fclose(gid);
+
+
+
+	_endthreadex(0);
+
+
+
+	return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+//ステレオマッチング
+//https://www.kkaneko.jp/db/pointcloud/stereomatching.html
+//https://ichi.pro/fukasa-ii-burokku-matchingu-234857019418386
+//https://rest-term.com/archives/1072/
+
+int stereo_matching() {
+
+	cv::VideoCapture cap(0);
+
+	if (!cap.isOpened()) {
+		return -1;
+	}
+
+	cv::Mat image;
+	cv::Mat left_image, right_image;
+	cv::Mat left_image_gray, right_image_gray;
+
+	int left_rows;
+	int left_cols; 
+	int right_rows;
+	int right_cols;
+
+
+
+
+	while (1) {
+		cap >> image;
+
+		left_image = image(cv::Rect(0, 0, image.cols / 2, image.rows));
+		right_image = image(cv::Rect(image.cols / 2, 0, image.cols / 2, image.rows));
+
+
+		// グレイスケール
+		cv::cvtColor(left_image, left_image_gray, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(right_image, right_image_gray, cv::COLOR_BGR2GRAY);
+
+
+		left_rows = left_image.rows;
+		left_cols = left_image.cols;
+		right_rows = right_image.rows;
+		right_rows = right_image.cols;
+
+
+
+
+
+
+		cv::namedWindow("left_image", WINDOW_AUTOSIZE);
+		cv::imshow("left_image", left_image);
+		cv::namedWindow("right_image", WINDOW_AUTOSIZE);
+		cv::imshow("right_image", right_image);
+
+
+
+		int k = cv::waitKey(30);
+		if (k >= 0) {
+			break;
+		}
+
+	}
+
+
+
+	cap.release();
+	cv::destroyAllWindows();
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+int photo_hunt() {
+
+	
+	string image_path;
+	Mat image, left_image, right_image, left_image_clone;
+	Mat left_image_gray;
+	Mat black;
+
+
+	cv::Rect rect;
+
+	int rows, cols;
+	int b_diff, g_diff, r_diff;
+	std::vector<std::vector<cv::Point> > contours;
+	
+
+	int threshold = 50;
+
+
+	image_path = "D:\\M1\\Advanced_Food_System_Studies\\1\\matigai.png";
+	image =  cv::imread(image_path, cv::IMREAD_COLOR);
+	left_image = image(cv::Rect(0, 0, image.cols / 2, image.rows));
+	left_image_clone = left_image.clone();
+	right_image = image(cv::Rect(image.cols / 2, 0, image.cols / 2, image.rows));
+
+
+	black = left_image.clone();
+
+	cvtColor(left_image, left_image_gray, CV_BGR2GRAY); //グレースケールに変換
+
+
+	rows = left_image.rows;
+	cols = left_image.cols;
+
+
+	for (int j = 0; j < rows; j++) {
+		for (int i = 0; i < cols; i++) {
+			black.at<cv::Vec3b>(j, i)[0] = 0;
+			black.at<cv::Vec3b>(j, i)[1] = 0;
+			black.at<cv::Vec3b>(j, i)[2] = 0;
+		}
+	}
+	
+
+	for (int j = 0; j < rows; j++) {
+		for (int i = 0; i < cols; i++) {
+
+			b_diff = abs(left_image.at<cv::Vec3b>(j, i)[0] - right_image.at<cv::Vec3b>(j, i)[0]);
+			g_diff = abs(left_image.at<cv::Vec3b>(j, i)[1] - right_image.at<cv::Vec3b>(j, i)[1]);
+			r_diff = abs(left_image.at<cv::Vec3b>(j, i)[2] - right_image.at<cv::Vec3b>(j, i)[2]);
+
+
+			if (b_diff > threshold && g_diff > threshold && r_diff > threshold) {
+
+				black.at<cv::Vec3b>(j, i)[0] = 255;
+				black.at<cv::Vec3b>(j, i)[1] = 255;
+				black.at<cv::Vec3b>(j, i)[2] = 255;
+
+
+				left_image_clone.at<cv::Vec3b>(j, i)[0] = 0;
+				left_image_clone.at<cv::Vec3b>(j, i)[1] = 0;
+				left_image_clone.at<cv::Vec3b>(j, i)[2] = 255;
+
+			}
+			else {
+				continue;
+			}
+			
+		}
+	}
+	
+
+	cv::cvtColor(black, black, cv::COLOR_BGR2GRAY);
+
+	cv::findContours(black, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+
+
+	vector<vector<Point> > contours_poly(contours.size());
+	vector<Rect> boundRect(contours.size());
+
+
+	for (int i = 0; i < contours.size(); i++)
+	{
+		cv::approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
+		boundRect[i] = boundingRect(Mat(contours_poly[i]));
+	}
+
+
+	for (int i = 0; i < contours.size(); i++) {
+		drawContours(left_image_clone, contours_poly, i, Scalar(0,0,255), 1, 1, vector<Vec4i>(), 0, Point());
+		rectangle(left_image_clone, boundRect[i].tl(), boundRect[i].br(), Scalar(0, 255, 0), 2, 8, 0);
+	}
+
+
+
+
+	cv::namedWindow("photo hunt", WINDOW_AUTOSIZE);
+	cv::imshow("photo hunt", left_image_clone);
+	cv::namedWindow("photo hunt black", WINDOW_AUTOSIZE);
+	cv::imshow("photo hunt black", black);
+	cv::namedWindow("left image", WINDOW_AUTOSIZE);
+	cv::imshow("left image", left_image); 
+	cv::namedWindow("right image", WINDOW_AUTOSIZE);
+	cv::imshow("right image", right_image);
+	cv::waitKey(0);
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+//パノラマ
+
+
+
+
