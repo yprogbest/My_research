@@ -606,7 +606,7 @@ int object_tracking() {
 		
 
 
-		for (int a = 230; a > 0; a = a - 50)
+		for (int a = 220; a > 0; a = a - 50)
 		{
 
 			for (int y = 0; y < mask_rows; y++)
@@ -682,22 +682,68 @@ int object_tracking() {
 							}
 						}
 					}
-					else if (b == 0 && g == 0 && r == 0)
-					{
-						continue;
-					}
-
-
-
-
-
-
 					//container
-					if (b > a && g < 10 && r < 10)
+					else if (b > a && g < 10 && r < 10)
 					{
+						container_xy.x = x;
+						container_xy.y = y;
+
 						object_name = "container" + to_string(container_num);
 
 
+						std::cout << object_name << std::endl;
+
+
+
+						count++;
+
+						if (count == 1)
+						{
+							mask_min.x = container_xy.x;
+							mask_min.y = container_xy.y;
+
+							mask_max.x = container_xy.x;
+							mask_max.y = container_xy.y;
+						}
+
+
+
+						if (count > 1)
+						{
+							if (container_xy.x > mask_max.x)
+							{
+								mask_max.x = container_xy.x;
+								mask_max.y = container_xy.y;
+							}
+						}
+
+						//std::cout << "x_min= " << mask_min.x << "\t" << "y_min=" << mask_min.y << "\t" << "x_max= " << mask_max.x << "\t" << "y_max=" << mask_max.y << std::endl;
+
+						for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
+						{
+							if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
+							if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
+
+
+
+
+							if (((int)imagePoints_LiDAR2ZED[j].x > mask_min.x && (int)imagePoints_LiDAR2ZED[j].y > mask_min.y - 3) && ((int)imagePoints_LiDAR2ZED[j].x < mask_max.x && (int)imagePoints_LiDAR2ZED[j].y < mask_max.y))
+							{
+								if (mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[0] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[1] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[2] != 0)
+								{
+									//認識範囲内のLiDAR点群をプッシュバック
+									imagePoints_LiDAR2ZED_in_region_container.push_back(imagePoints_LiDAR2ZED[j]);
+
+									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+								}
+							}
+						}
+
+
+					}
+					else if (b == 0 && g == 0 && r == 0)
+					{
+						continue;
 					}
 
 
@@ -719,14 +765,14 @@ int object_tracking() {
 
 			}
 
-			if (imagePoints_LiDAR2ZED_in_region_person.size() == 0) break;
+
+			if (imagePoints_LiDAR2ZED_in_region_person.size() != 0) person_num++;
+			if (imagePoints_LiDAR2ZED_in_region_container.size() != 0) container_num++;;
 
 			imagePoints_LiDAR2ZED_in_region_person.clear();
 			imagePoints_LiDAR2ZED_in_region_person.shrink_to_fit();
-
-
-			person_num++;
-			container_num++;
+			imagePoints_LiDAR2ZED_in_region_container.clear();
+			imagePoints_LiDAR2ZED_in_region_container.shrink_to_fit();
 
 		}
 
