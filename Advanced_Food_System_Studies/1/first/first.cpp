@@ -44,6 +44,7 @@ int stereo_gnuplot();
 unsigned _stdcall thread_gnuplot(void *p);
 int stereo_matching();
 int photo_hunt();
+int meanshift(int argc, char **argv);
 
 
 
@@ -67,7 +68,7 @@ std::vector<struct stereo> all_xyz;
 
 
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
 	int n = 0; //画像から動画を作成する際のフレーム数
 	int nCommand;
@@ -172,6 +173,11 @@ int main(int argc, const char* argv[])
 
 				break;
 
+			case 15:
+				meanshift(argc, argv);
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -211,7 +217,8 @@ int menu_screen()
 	printf("<<12>>:ステレオカメラによる距離算出\n");
 	printf("<<13>>:ステレオカメラによる距離算出 グラフに表示\n");
 	printf("<<14>>:間違い探し\n");
-	printf("<<15>>:○○\n");
+	printf("<<15>>:MeanShiftを使った物体追跡\n");
+	printf("<<16>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -1963,11 +1970,6 @@ unsigned _stdcall thread_gnuplot(void *p)
 
 
 
-
-
-
-
-
 //ステレオマッチング
 //https://www.kkaneko.jp/db/pointcloud/stereomatching.html
 //https://ichi.pro/fukasa-ii-burokku-matchingu-234857019418386
@@ -2160,10 +2162,98 @@ int photo_hunt() {
 
 
 
+//第12回
+//https://www.robonchu.info/entry/2017/08/20/130631
+//http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_video/py_meanshift/py_meanshift.html
+//https://github.com/gishi523/simple-meanshift-traker
+//https://docs.opencv.org/master/d7/d00/tutorial_meanshift.html
+//↑Meanshift と Camshift
+
+//http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_video/py_lucas_kanade/py_lucas_kanade.html
+//↑オプティカルフロー
 
 
-//パノラマ
+int meanshift(int argc, char **argv) {
+
+
+	//const string about =
+	//	"This sample demonstrates the meanshift algorithm.\n"
+	//	"The example file can be downloaded from:\n"
+	//	"  https://www.bogotobogo.com/python/OpenCV_Python/images/mean_shift_tracking/slow_traffic_small.mp4";
+	//const string keys =
+	//	"{ h help |      | print this help message }"
+	//	"{ @image |<none>| path to image file }";
+	//CommandLineParser parser(argc, argv, keys);
+	//parser.about(about);
+	//if (parser.has("help"))
+	//{
+	//	parser.printMessage();
+	//	return 0;
+	//}
+	//string filename = parser.get<string>("@image");
+	//if (!parser.check())
+	//{
+	//	parser.printErrors();
+	//	return 0;
+	//}
+
+
+	//VideoCapture capture(filename);
+	VideoCapture capture(0);
+
+	if (!capture.isOpened()) {
+		//error in opening the video input
+		cerr << "Unable to open file!" << endl;
+		return 0;
+	}
+	Mat frame, roi, hsv_roi, mask;
+	// take first frame of the video
+	capture >> frame;
+	// setup initial location of window
+	Rect track_window(300, 200, 100, 50); // simply hardcoded the values
+	
+
+										  // set up the ROI for tracking
+	roi = frame(track_window);
+	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
+	inRange(hsv_roi, Scalar(0, 60, 32), Scalar(180, 255, 255), mask);
+	float range_[] = { 0, 180 };
+	const float* range[] = { range_ };
+	Mat roi_hist;
+	int histSize[] = { 180 };
+	int channels[] = { 0 };
+	calcHist(&hsv_roi, 1, channels, mask, roi_hist, 1, histSize, range);
+	normalize(roi_hist, roi_hist, 0, 255, NORM_MINMAX); //正規化
+	// Setup the termination criteria, either 10 iteration or move by atleast 1 pt
+	TermCriteria term_crit(TermCriteria::EPS | TermCriteria::COUNT, 10, 1);
+	while (true) {
+		Mat hsv, dst;
+		capture >> frame;
+		if (frame.empty())
+			break;
+		cvtColor(frame, hsv, COLOR_BGR2HSV);
+		calcBackProject(&hsv, 1, channels, roi_hist, dst, range);
+		// apply meanshift to get the new location
+		cv::meanShift(dst, track_window, term_crit);
+		// Draw it on image
+		rectangle(frame, track_window, 255, 2);
+
+		
+		imshow("img2", frame);
+		imshow("img3", dst);
+
+
+		int keyboard = waitKey(30);
+		if (keyboard >= 0)
+		{
+			break;
+		}
+			
+	}
 
 
 
+	return 0;
+
+}
 
