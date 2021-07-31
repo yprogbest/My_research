@@ -16,6 +16,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/superres/optical_flow.hpp>
+#include <opencv2/video/tracking.hpp>
 
 
 #include <atltime.h> //処理時間を計算するために用意
@@ -45,6 +47,7 @@ unsigned _stdcall thread_gnuplot(void *p);
 int stereo_matching();
 int photo_hunt();
 int meanshift(int argc, char **argv);
+int optical_flow();
 
 
 
@@ -178,6 +181,11 @@ int main(int argc, char* argv[])
 
 				break;
 
+			case 16:
+				optical_flow();
+
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -218,7 +226,8 @@ int menu_screen()
 	printf("<<13>>:ステレオカメラによる距離算出 グラフに表示\n");
 	printf("<<14>>:間違い探し\n");
 	printf("<<15>>:MeanShiftを使った物体追跡\n");
-	printf("<<16>>:○○\n");
+	printf("<<16>>:オプティカルフローを用いた物体追跡\n");
+	printf("<<17>>:○○\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -2213,7 +2222,7 @@ int meanshift(int argc, char **argv) {
 	Rect track_window(300, 200, 100, 50); // simply hardcoded the values
 	
 
-										  // set up the ROI for tracking
+	// set up the ROI for tracking
 	roi = frame(track_window);
 	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
 	inRange(hsv_roi, Scalar(0, 60, 32), Scalar(180, 255, 255), mask);
@@ -2226,7 +2235,10 @@ int meanshift(int argc, char **argv) {
 	normalize(roi_hist, roi_hist, 0, 255, NORM_MINMAX); //正規化
 	// Setup the termination criteria, either 10 iteration or move by atleast 1 pt
 	TermCriteria term_crit(TermCriteria::EPS | TermCriteria::COUNT, 10, 1);
-	while (true) {
+
+
+	while (true) 
+	{
 		Mat hsv, dst;
 		capture >> frame;
 		if (frame.empty())
@@ -2256,4 +2268,94 @@ int meanshift(int argc, char **argv) {
 	return 0;
 
 }
+
+
+
+
+
+
+//オプティカルフローを用いた物体追跡
+//https://qiita.com/icoxfog417/items/357e6e495b7a40da14d8
+//https://whoopsidaisies.hatenablog.com/entry/2013/12/15/020420
+//
+int optical_flow() {
+
+	// 動画ファイルの読み込み
+	VideoCapture capture = VideoCapture("D:\\M1\\Advanced_Food_System_Studies\\1\\Car_2165.mp4");
+
+	// 前のフレームを保存しておく
+	Mat prev;
+	capture >> prev;
+
+	// 特徴点格納用
+	vector<Point2f> prevCorners;
+	vector<Point2f> currCorners;
+	vector<uchar> featuresFound;
+	vector<float> featuresErrors;
+
+	// 追跡する特徴点を求める
+	Mat prevGray;
+	cv::cvtColor(prev, prevGray, CV_RGB2GRAY);
+	cv::goodFeaturesToTrack(prevGray, prevCorners, 1000, 0.3, 7);
+	cv::cornerSubPix(prevGray, prevCorners, Size(10, 10), Size(-1, -1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 10, 0.03));
+
+	while (1) 
+	{
+
+		// 現在のフレームを保存
+		Mat curr;
+		capture >> curr;
+
+		Mat currGray;
+		cv::cvtColor(curr, currGray, CV_RGB2GRAY);
+
+		cv::calcOpticalFlowPyrLK(
+			prevGray,
+			currGray,
+			prevCorners,
+			currCorners,
+			featuresFound,
+			featuresErrors);
+
+		for (int i = 0; i < featuresFound.size(); i++) {
+			if (featuresFound[0] == 0 || featuresErrors[i] > 550) {
+				continue;
+			}
+
+			Point p1 = Point((int)prevCorners[i].x, (int)prevCorners[i].y);
+			Point p2 = Point((int)currCorners[i].x, (int)currCorners[i].y);
+			cv::line(curr, p1, p2, Scalar(255, 0, 0), 2);
+		}
+
+		// 表示
+		cv::imshow("input", curr);
+
+		prev = curr;
+
+
+		int key = cv::waitKey(30);
+
+		if (key >= 0) break;
+
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+
+//最終講義
+//パーティクルフィルタ
+//https://algorithm.joho.info/image-processing/particle-filter-tracking/
+//file:///C:/Users/MASUDA~1/AppData/Local/Temp/MicrosoftEdgeDownloads/06de909c-3dc1-46f9-9e74-dbcacdb3cda2/OS10041000011.pdf
+//https://qiita.com/chimamedia/items/e6498ee6bcd976cbc5c2
+int particle_main()
+{
+
+}
+
 
