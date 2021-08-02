@@ -27,46 +27,48 @@
 #define CV_EXT_STR ".lib"
 #endif
 
-#define _X64
-#undef _X64
+//#define _X64
+//#undef _X64
+//
+//
+//#ifdef _X64
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_calib3d"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_core"   CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_features2d" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_flann"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_highgui"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_imgcodecs"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_imgproc"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_ml" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_objdetect"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_photo"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_shape"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_stitching"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_superres"   CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_ts" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_video"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_videoio"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_videostab"  CV_VERSION_STR  CV_EXT_STR)
+//#else
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_calib3d"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_core"   CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_features2d" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_flann"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_highgui"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_imgcodecs"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_imgproc"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_ml" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_objdetect"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_photo"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_shape"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_stitching"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_superres"   CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_ts" CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_video"  CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_videoio"    CV_VERSION_STR  CV_EXT_STR)
+//#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_videostab"  CV_VERSION_STR  CV_EXT_STR)
+//#endif
 
-#ifdef _X64
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_calib3d"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_core"   CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_features2d" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_flann"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_highgui"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_imgcodecs"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_imgproc"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_ml" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_objdetect"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_photo"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_shape"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_stitching"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_superres"   CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_ts" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_video"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_videoio"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x64\\lib\\opencv_videostab"  CV_VERSION_STR  CV_EXT_STR)
-#else
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_calib3d"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_core"   CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_features2d" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_flann"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_highgui"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_imgcodecs"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_imgproc"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_ml" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_objdetect"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_photo"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_shape"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_stitching"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_superres"   CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_ts" CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_video"  CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_videoio"    CV_VERSION_STR  CV_EXT_STR)
-#pragma comment(lib, "C:\\OpenCV3.1.0\\vs2013\\x86\\lib\\opencv_videostab"  CV_VERSION_STR  CV_EXT_STR)
-#endif
 
 /***** âÊëúÇÃÉsÉNÉZÉãÇÃíºê⁄ëÄçÏ OpenCV-2.x (MAT* ) *****/
 

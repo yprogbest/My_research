@@ -21,6 +21,7 @@
 
 
 #include <atltime.h> //処理時間を計算するために用意
+#include "Particle.hpp"
 
 
 
@@ -48,6 +49,7 @@ int stereo_matching();
 int photo_hunt();
 int meanshift(int argc, char **argv);
 int optical_flow();
+int particle_main();
 
 
 
@@ -186,6 +188,10 @@ int main(int argc, char* argv[])
 
 				break;
 
+			case 17:
+				particle_main();
+				break;
+
 
 			case 99:
 				nFlag = -1;
@@ -227,7 +233,7 @@ int menu_screen()
 	printf("<<14>>:間違い探し\n");
 	printf("<<15>>:MeanShiftを使った物体追跡\n");
 	printf("<<16>>:オプティカルフローを用いた物体追跡\n");
-	printf("<<17>>:○○\n");
+	printf("<<17>>:パーティクルフィルターによる追跡\n");
 	printf("<99>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -477,7 +483,7 @@ int face_detection(void)
 
 
 
-	VideoCapture cap(0, cv::CAP_DSHOW);
+	VideoCapture cap("D:\\M1\\Advanced_Food_System_Studies\\1\\Girl_45132.mp4");
 	if (!cap.isOpened()) return -1;
 
 
@@ -2339,6 +2345,9 @@ int optical_flow() {
 
 	}
 
+
+	capture.release();
+	destroyAllWindows();
 	return 0;
 }
 
@@ -2355,6 +2364,90 @@ int optical_flow() {
 //https://qiita.com/chimamedia/items/e6498ee6bcd976cbc5c2
 int particle_main()
 {
+	//std::vector<cv::Point> all_pt;
+	//int frame_count = 0;
+
+	cv::VideoCapture video;
+	video.open(0);
+
+	if (!video.isOpened()) {
+		cout << "can't open your video" << endl;
+	}
+
+	cv::namedWindow("Camera");
+
+	bool start = false;
+
+	ParticleFilter *pf = new ParticleFilter(); //初期化された結果も含む
+
+	while (1) {
+		cv::Mat frame;
+		video >> frame;
+
+		//終了判定の条件
+		if (frame.empty()) {
+			break;
+		}
+
+		if (!start)
+		{
+			std::vector<int> upper = { frame.size().width, frame.size().height, 10, 10 };
+			std::vector<int> lower = { 0, 0, -10, -10 };
+			std::vector<int> noise = { 30, 30, 10, 10 };
+
+			pf = new ParticleFilter(300, frame.size().height, frame.size().width, upper, lower, noise);
+			start = true;
+		}
+
+		pf->Resampling(); //リサンプリング
+		pf->Predict(); //予測
+		pf->CalcWeight(frame); //重み計算
+
+		Particle p = pf->Measure(); //パーティクルの重心を計算
+		p.PrintParameter();
+
+		cv::Point pt = cv::Point(p.width, p.height);
+
+		//all_pt.push_back(pt);
+
+		//全部の点を表示
+		std::vector<Particle> particle = pf->GetPaticleVector();
+
+		for (int i = 0; i < particle.size(); ++i)
+		{
+			cv::Point pp = cv::Point(particle[i].width, particle[i].height);
+			cv::circle(frame, pp, 1, cv::Scalar(0, 255, 255), -1);
+		}
+
+		//中心を赤色で表示
+		cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255), -1);
+
+		
+		/*if (frame_count > 0)
+		{
+			for (int i = 1; i < all_pt.size(); ++i)
+			{
+				cv::line(frame, Point(all_pt[i - 1].x, all_pt[i - 1].y), Point(all_pt[i].x, all_pt[i].y), Scalar(0, 0255), 3);
+			}
+		}
+
+		
+		frame_count++;*/
+
+
+		cv::imshow("Camera", frame);
+
+		int key = cv::waitKey(30);
+
+		if (key >= 0) break;
+	}
+
+
+
+	video.release();
+	cv::destroyAllWindows();
+
+	return 0;
 
 }
 
