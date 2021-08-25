@@ -15,18 +15,6 @@
 
 ### ２０２1前期（修士1年）
 
-
-#### 3. 〇〇(/)
-- [Slide]
-- [Report]
-
-##### 要旨
-
-
-##### 実験結果
-
-
-
 #### 2. インスタンスセグメンテーションを用いた作業空間内物体認識システムの開発(6/11)
 - [Slide](https://github.com/yuki-research/My_research/files/6641805/0611_P_Masuda.pdf)
 - [Report](https://github.com/yuki-research/My_research/files/6641804/0611_W_Masuda.pdf)
