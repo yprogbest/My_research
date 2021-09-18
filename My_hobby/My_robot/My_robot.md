@@ -1,5 +1,5 @@
 # 自律走行ロボット（自作）
-![4B047B63-63CB-40DF-AE32-994B5603E32C](https://user-images.githubusercontent.com/82224433/133687307-76e0a84e-d218-4106-8cee-24efdfd7096f.jpg)
+![0C4ED5E6-5970-443A-A038-4FA338512422](https://user-images.githubusercontent.com/82224433/133868393-978f8b44-b621-494f-ab46-6bf3143bad08.jpg)
 
 
 ## 開発環境
