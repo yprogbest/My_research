@@ -63,7 +63,9 @@ int seg_pixcel_count();
 int seg_pixcel_count();
 int yolo_box_coordinate();
 int object_tracking();
-
+int distance_hist(std::vector<cv::Point3f> obj_lidar);
+int max_distance_hist(int hist[]);
+std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar);
 
 
 
@@ -421,17 +423,17 @@ int object_tracking() {
 	vector<Point2f> imagePoints_LiDAR2ZED_in_region_container;
 
 	//認識範囲のLiDARの点群を入れるために配列を用意
-	vector<Point> person_lidar1;
-	vector<Point> person_lidar2;
-	vector<Point> person_lidar3;
-	vector<Point> person_lidar4;
-	vector<Point> person_lidar5;
+	vector<Point3f> person_lidar1;
+	vector<Point3f> person_lidar2;
+	vector<Point3f> person_lidar3;
+	vector<Point3f> person_lidar4;
+	vector<Point3f> person_lidar5;
 
-	vector<Point> container_lidar1;
-	vector<Point> container_lidar2;
-	vector<Point> container_lidar3;
-	vector<Point> container_lidar4;
-	vector<Point> container_lidar5;
+	vector<Point3f> container_lidar1;
+	vector<Point3f> container_lidar2;
+	vector<Point3f> container_lidar3;
+	vector<Point3f> container_lidar4;
+	vector<Point3f> container_lidar5;
 
 	int color_diff = 30;
 	int object_color1 = 255;
@@ -441,6 +443,37 @@ int object_tracking() {
 	int object_color5 = object_color4 - color_diff;
 	int object_color6 = object_color5 - color_diff;
 	
+	//距離
+	float person_distance1;
+	float person_distance2;
+
+	float container_distance1;
+	float container_distance2;
+	float container_distance3;
+	float container_distance4;
+	float container_distance5;
+
+	//距離の最大値
+	float max_distance_person1;
+	float max_distance_person2;
+	float max_distance_container1;
+	float max_distance_container2;
+	float max_distance_container3;
+	float max_distance_container4;
+	float max_distance_container5;
+
+	// 最大の距離の時のx,y,z座標
+	Point3f max_coordinate_person1;
+	Point3f max_coordinate_person2;
+	Point3f max_coordinate_container1;
+	Point3f max_coordinate_container2;
+	Point3f max_coordinate_container3;
+	Point3f max_coordinate_container4;
+	Point3f max_coordinate_container5;
+
+
+
+
 
 
 	//mask画像の色（person→赤，container→青）
@@ -641,93 +674,151 @@ int object_tracking() {
 		
 		for (int k = 0; k < (int)imagePoints_LiDAR2ZED.size(); k++)
 		{
-			if (point_cloud_LiDAR_yzx[k].z >= 0)
+			if (point_cloud_LiDAR_yzx[k].z < 0) continue; 
+			if (imagePoints_LiDAR2ZED[k].x < 0 || imagePoints_LiDAR2ZED[k].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[k].y < 0 || imagePoints_LiDAR2ZED[k].y >= IMG_YSIZE) continue;
+			
+
+			//LiDAR点群の整数化
+			imagePoints_LiDAR2ZED[k].x = int(imagePoints_LiDAR2ZED[k].x + 0.5);
+			imagePoints_LiDAR2ZED[k].y = int(imagePoints_LiDAR2ZED[k].y + 0.5);
+
+			//std::cout << imagePoints_LiDAR2ZED[k].x << "\t" << imagePoints_LiDAR2ZED[k].y << std::endl;
+
+
+			//認識結果の範囲内のLiDAR点群が存在する画素値
+			b_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
+			g_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
+			r_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
+
+
+			//person
+			//1人目
+			if (b_lidar < 10 && g_lidar < 10 && (object_color2 < r_lidar &&r_lidar <= object_color1))
 			{
-				if (imagePoints_LiDAR2ZED[k].x >= 0 && imagePoints_LiDAR2ZED[k].x < IMG_XSIZE && imagePoints_LiDAR2ZED[k].y >= 0 && imagePoints_LiDAR2ZED[k].y < IMG_YSIZE)
-				{
+				person_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					//LiDAR点群の整数化
-					imagePoints_LiDAR2ZED[k].x = int(imagePoints_LiDAR2ZED[k].x + 0.5);
-					imagePoints_LiDAR2ZED[k].y = int(imagePoints_LiDAR2ZED[k].y + 0.5);
+			}
+			//2人目
+			else if (b_lidar < 10 && g_lidar < 10 && (object_color3 < r_lidar &&r_lidar <= object_color2))
+			{
+				person_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				
+			}
+			/*else if (b_lidar < 5 && g_lidar < 5 && (object_color4 < r_lidar &&r_lidar <= object_color3))
+			{
+				person_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					//std::cout << imagePoints_LiDAR2ZED[k].x << "\t" << imagePoints_LiDAR2ZED[k].y << std::endl;
+			}
+			else if (b_lidar < 5 && g_lidar < 5 && (object_color5 < r_lidar &&r_lidar <= object_color4))
+			{
+				person_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
+			}
+			else if (b_lidar < 5 && g_lidar < 5 && (object_color6 < r_lidar &&r_lidar <= object_color5))
+			{
+				person_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					//認識結果の範囲内のLiDAR点群が存在する画素値
-					b_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
-					g_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
-					r_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
-
-
-					//person
-					if (b_lidar < 5 && g_lidar < 5 && (object_color2 < r_lidar &&r_lidar <= object_color1))
-					{
-						person_lidar1.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-
-					}
-					else if (b_lidar < 5 && g_lidar < 5 && (object_color3 < r_lidar &&r_lidar <= object_color2))
-					{
-						person_lidar2.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-
-					}
-					else if (b_lidar < 5 && g_lidar < 5 && (object_color4 < r_lidar &&r_lidar <= object_color3))
-					{
-						person_lidar3.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-
-					}
-					else if (b_lidar < 5 && g_lidar < 5 && (object_color5 < r_lidar &&r_lidar <= object_color4))
-					{
-						person_lidar4.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-
-					}
-					else if (b_lidar < 5 && g_lidar < 5 && (object_color6 < r_lidar &&r_lidar <= object_color5))
-					{
-						person_lidar5.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-
-					}
+			}*/
 
 
-					//container
-					if ((object_color2 < b_lidar &&b_lidar <= object_color1) && g_lidar < 5 && r_lidar < 5)
-					{
-						container_lidar1.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			//container
+			//1つ目
+			if ((object_color2 < b_lidar &&b_lidar <= object_color1) && g_lidar < 10 && r_lidar < 10)
+			{
+				container_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					}
-					else if ((object_color3 < b_lidar &&b_lidar <= object_color2) && g_lidar < 5 && r_lidar < 5)
-					{
-						container_lidar2.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			}
+			//2つ目
+			else if ((object_color3 < b_lidar &&b_lidar <= object_color2) && g_lidar < 10 && r_lidar < 10)
+			{
+				container_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					}
-					else if ((object_color4 < b_lidar &&b_lidar <= object_color3) && g_lidar < 5 && r_lidar < 5)
-					{
-						container_lidar3.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			}
+			//3つ目
+			else if ((object_color4 < b_lidar &&b_lidar <= object_color3) && g_lidar < 10 && r_lidar < 10)
+			{
+				container_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					}
-					else if ((object_color5 < b_lidar &&b_lidar <= object_color4) && g_lidar < 5 && r_lidar < 5)
-					{
-						container_lidar4.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			}
+			//4つ目
+			else if ((object_color5 < b_lidar &&b_lidar <= object_color4) && g_lidar < 10 && r_lidar < 10)
+			{
+				container_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
-					}
-					else if ((object_color6 < b_lidar &&b_lidar <= object_color5) && g_lidar < 5 && r_lidar < 5)
-					{
-						container_lidar5.push_back(imagePoints_LiDAR2ZED[k]);
-						cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-					}
-
-				}
-
+			}
+			//5つ目
+			else if ((object_color6 < b_lidar &&b_lidar <= object_color5) && g_lidar < 10 && r_lidar < 10)
+			{
+				container_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
+				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 			}
 
 		}
+
+
+		// find distance //
+		// use fistgram /////////////////////////////////////////
+
+		////person1
+		//max_distance_person1 = distance_hist(person_lidar1);
+		////printf("max_distance = %d m\n", max_distance_person1);
+
+		////person2
+		//max_distance_person2 = distance_hist(person_lidar2);
+
+		////container1
+		//max_distance_container1 = distance_hist(container_lidar1);
+
+		////container2
+		//max_distance_container2 = distance_hist(container_lidar2);
+
+		////container3
+		//max_distance_container3 = distance_hist(container_lidar3);
+
+		////container4
+		//max_distance_container4 = distance_hist(container_lidar4);
+
+		////container5
+		//max_distance_container5 = distance_hist(container_lidar5);
+
+		///////////////////////////////////////////////////////////
+
+
+
+		// use median/////////////////////////////////////////////
+		std::tie(max_distance_person1, max_coordinate_person1) = get_median(person_lidar1);
+		std::tie(max_distance_person2, max_coordinate_person1) = get_median(person_lidar2);
+		std::tie(max_distance_container1, max_coordinate_container1) = get_median(container_lidar1);
+		std::tie(max_distance_container2, max_coordinate_container2) = get_median(container_lidar2);
+		std::tie(max_distance_container3, max_coordinate_container3) = get_median(container_lidar3);
+		std::tie(max_distance_container4, max_coordinate_container4) = get_median(container_lidar4);
+		std::tie(max_distance_container5, max_coordinate_container5) = get_median(container_lidar5);
+
+		printf("person_median_x = %lf\n", max_coordinate_person1.x);
+		///////////////////////////////////////////////////////////
+
+		// ↑find distance//
+
+
+
+
+
+		// plot onto Gnuplot //
+
+
+
+		// //
+
+
 
 
 		//画像の出力
@@ -736,7 +827,7 @@ int object_tracking() {
 
 
 		//動画の出力
-		//out_frame << out_image;
+		out_frame << out_image;
 
 
 
@@ -746,20 +837,20 @@ int object_tracking() {
 		i_yolo_lidar++;
 
 
-		std::cout << "person1_num = " << person_lidar1.size() << "\t" << "person2_num = " << person_lidar2.size() << "\t" << "person3_num = " << person_lidar3.size() << "\t" << "person4_num = " << person_lidar4.size() << "\t" << "person5_num = " << person_lidar5.size() << std::endl;
-		std::cout << "container1_num = " << container_lidar1.size() << "\t" << "container2_num = " << container_lidar2.size() << "\t" << "container3_num = " << container_lidar3.size() << "\t" << "container4_num = " << container_lidar4.size() << "\t" << "container5_num = " << container_lidar5.size() << std::endl;
+		//std::cout << "person1_num = " << person_lidar1.size() << "\t" << "person2_num = " << person_lidar2.size() << "\t" << "person3_num = " << person_lidar3.size() << "\t" << "person4_num = " << person_lidar4.size() << "\t" << "person5_num = " << person_lidar5.size() << std::endl;
+		//std::cout << "container1_num = " << container_lidar1.size() << "\t" << "container2_num = " << container_lidar2.size() << "\t" << "container3_num = " << container_lidar3.size() << "\t" << "container4_num = " << container_lidar4.size() << "\t" << "container5_num = " << container_lidar5.size() << std::endl;
 
 
 		person_lidar1.clear();
 		person_lidar1.shrink_to_fit();
 		person_lidar2.clear();
 		person_lidar2.shrink_to_fit();
-		person_lidar3.clear();
+		/*person_lidar3.clear();
 		person_lidar3.shrink_to_fit();
 		person_lidar4.clear();
 		person_lidar4.shrink_to_fit();
 		person_lidar5.clear();
-		person_lidar5.shrink_to_fit();
+		person_lidar5.shrink_to_fit();*/
 
 		container_lidar1.clear();
 		container_lidar1.shrink_to_fit();
@@ -772,6 +863,14 @@ int object_tracking() {
 		container_lidar5.clear();
 		container_lidar5.shrink_to_fit();
 
+		point_cloud.clear();
+		point_cloud.shrink_to_fit();
+
+		point_cloud_LiDAR_yzx.clear();
+		point_cloud_LiDAR_yzx.shrink_to_fit();
+
+		imagePoints_LiDAR2ZED.clear();
+		imagePoints_LiDAR2ZED.shrink_to_fit();
 
 	}
 
@@ -784,13 +883,6 @@ int object_tracking() {
 
 	return 0;
 }
-
-
-
-
-
-
-
 
 
 //試作（画像で処理を行う）
@@ -1227,3 +1319,166 @@ int object_tracking() {
 }
 
 */
+
+
+
+
+
+//代表点の算出手法1(ヒストグラム)→点群のx,y,z値が出力出来なくなる
+int distance_hist(std::vector<cv::Point3f> obj_lidar)
+{
+	//0mから150m
+	const int hist_array = 150;
+	int hist[150];
+	float distance;
+	int z_class = 0;
+	float fraction;
+	int max_distance;
+
+
+	//histの初期化
+	for (int a = 0; a < hist_array; a++)
+	{
+		hist[a] = 0;
+	}
+
+	for (int i = 0; i < obj_lidar.size(); i++)
+	{
+		// find a distance from the sensor to the object
+		distance = obj_lidar[i].x * obj_lidar[i].x + obj_lidar[i].y * obj_lidar[i].y + obj_lidar[i].z * obj_lidar[i].z;
+		distance = sqrt(distance);
+
+
+		//小数部分
+		fraction = distance - int(distance);
+
+		if (fraction >= 0.5)
+		{
+			z_class = int(distance + 0.5);
+		}
+		else
+		{
+			z_class = int(distance);
+		}
+
+		hist[z_class]++;
+
+		//printf("z_class = %d m\n", z_class);
+	}
+
+	max_distance = max_distance_hist(hist);
+
+
+	return max_distance;
+}
+
+
+int max_distance_hist(int hist[])
+{
+	int max = -1;
+	int a_max = -1;
+	const int hist_array = 150;
+
+
+	for (int a = 0; a < hist_array; a++)
+	{
+		if (max < hist[a])
+		{
+			max = hist[a];
+			a_max = a;
+		}
+	}
+
+	return a_max;
+}
+
+
+
+//代表点の算出手法2(Median)
+std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
+{
+	float distance;
+	std::vector<float> distance_vec;
+
+	float tmp_distance;
+	float tmp_x;
+	float tmp_y;
+	float tmp_z;
+
+	float median_distance;
+	Point3f median_lidar_point;
+
+
+	// find a distance from the sensor to the object
+	for (int i = 0; i < obj_lidar.size(); i++)
+	{
+		distance = obj_lidar[i].x * obj_lidar[i].x + obj_lidar[i].y * obj_lidar[i].y + obj_lidar[i].z * obj_lidar[i].z;
+		distance = sqrt(distance);
+
+		distance_vec.push_back(distance);
+	}
+
+	//Sort in descending order
+	for (int i = 0; i < distance_vec.size(); i++)
+	{
+		for (int h = i + 1; h < distance_vec.size(); h++)
+		{
+			if (distance_vec[i] < distance_vec[h])
+			{
+				// distance
+				tmp_distance = distance_vec[h];
+				distance_vec[h] = distance_vec[i];
+				distance_vec[i] = tmp_distance;
+
+				// x
+				tmp_x = obj_lidar[h].x;
+				obj_lidar[h].x = obj_lidar[i].x;
+				obj_lidar[i].x = tmp_x;
+
+				// y
+				tmp_y = obj_lidar[h].y;
+				obj_lidar[h].y = obj_lidar[i].y;
+				obj_lidar[i].y = tmp_y;
+
+				// z
+				tmp_z = obj_lidar[h].z;
+				obj_lidar[h].z = obj_lidar[i].z;
+				obj_lidar[i].z = tmp_z;
+			}
+		}
+	}
+
+
+	// find median value
+	if (distance_vec.size() == 0)
+	{
+		median_distance = 0.0;
+		median_lidar_point.x = 0.0;
+		median_lidar_point.y = 0.0;
+		median_lidar_point.z = 0.0;
+	}
+	else if (distance_vec.size() % 2 == 1)
+	{
+		median_distance = distance_vec[(int)((int)distance_vec.size() / 2)];
+		median_lidar_point.x = obj_lidar[(int)((int)obj_lidar.size() / 2)].x;
+		median_lidar_point.y = obj_lidar[(int)((int)obj_lidar.size() / 2)].y;
+		median_lidar_point.z = obj_lidar[(int)((int)obj_lidar.size() / 2)].z;
+	}
+	else if (distance_vec.size() % 2 == 0)
+	{
+		median_distance = (distance_vec[(int)((int)distance_vec.size() / 2) - 1] + distance_vec[(int)((int)distance_vec.size() / 2)]) / 2.0;
+		median_lidar_point.x = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
+		median_lidar_point.y = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
+		median_lidar_point.z = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].z + obj_lidar[(int)((int)obj_lidar.size() / 2)].z) / 2.0;
+	}
+
+	return{ median_distance, median_lidar_point };
+}
+
+
+// Gnuplotに代表点をプロットする
+int gnuplot_mapping()
+{
+
+}
+
