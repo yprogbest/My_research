@@ -66,6 +66,7 @@ int object_tracking();
 int distance_hist(std::vector<cv::Point3f> obj_lidar);
 int max_distance_hist(int hist[]);
 std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar);
+int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate);
 
 
 
@@ -407,6 +408,7 @@ int yolo_box_coordinate() {
 //動画で処理を行う
 int object_tracking() {
 
+	int object_num = 5;
 
 	vector<struct point_cloud>point_cloud; //push_backするために用意
 	struct point_cloud point; //LiDARの出力結果(x,y,z,intensity)
@@ -462,6 +464,17 @@ int object_tracking() {
 	float max_distance_container4;
 	float max_distance_container5;
 
+	//距離の最大値　push_back用
+	vector<float>max_distance_person1_vec;
+	vector<float>max_distance_person2_vec;
+	vector<float>max_distance_container1_vec;
+	vector<float>max_distance_container2_vec;
+	vector<float>max_distance_container3_vec;
+	vector<float>max_distance_container4_vec;
+	vector<float>max_distance_container5_vec;
+	vector<vector<float>> all_max_distance_vec;
+
+
 	// 最大の距離の時のx,y,z座標
 	Point3f max_coordinate_person1;
 	Point3f max_coordinate_person2;
@@ -471,8 +484,15 @@ int object_tracking() {
 	Point3f max_coordinate_container4;
 	Point3f max_coordinate_container5;
 
-
-
+	// 最大の距離の時のx,y,z座標 push_back用
+	vector<Point3f>max_coordinate_person1_vec;
+	vector<Point3f>max_coordinate_person2_vec;
+	vector<Point3f>max_coordinate_container1_vec;
+	vector<Point3f>max_coordinate_container2_vec;
+	vector<Point3f>max_coordinate_container3_vec;
+	vector<Point3f>max_coordinate_container4_vec;
+	vector<Point3f>max_coordinate_container5_vec;
+	vector<vector<Point3f>> all_max_coordinate_vec;
 
 
 
@@ -803,17 +823,55 @@ int object_tracking() {
 		std::tie(max_distance_container4, max_coordinate_container4) = get_median(container_lidar4);
 		std::tie(max_distance_container5, max_coordinate_container5) = get_median(container_lidar5);
 
-		printf("person_median_x = %lf\n", max_coordinate_person1.x);
+		//printf("person_median_x = %lf\n", max_coordinate_person1.x);
+
+		
+
+		// ここから（2次元配列の使い方）
+		/*max_distance_person1_vec.push_back(max_distance_person1);
+		max_distance_person2_vec.push_back(max_distance_person2);
+		max_distance_container1_vec.push_back(max_distance_container1);
+		max_distance_container2_vec.push_back(max_distance_container2);
+		max_distance_container3_vec.push_back(max_distance_container3);
+		max_distance_container4_vec.push_back(max_distance_container4);
+		max_distance_container5_vec.push_back(max_distance_container5);*/
+		if (all_max_distance_vec.size() == 0)
+		{
+			all_max_distance_vec[0].push_back(max_distance_person1);
+			all_max_distance_vec[1].push_back(max_distance_person2);
+			all_max_distance_vec[2].push_back(max_distance_container1);
+			all_max_distance_vec[3].push_back(max_distance_container2);
+			all_max_distance_vec[4].push_back(max_distance_container3);
+			all_max_distance_vec[5].push_back(max_distance_container4);
+			all_max_distance_vec[6].push_back(max_distance_container5);
+		}
+	
+		/*max_coordinate_person1_vec.push_back(max_coordinate_person1);
+		max_coordinate_person2_vec.push_back(max_coordinate_person2);
+		max_coordinate_container1_vec.push_back(max_coordinate_container1);
+		max_coordinate_container2_vec.push_back(max_coordinate_container2);
+		max_coordinate_container3_vec.push_back(max_coordinate_container3);
+		max_coordinate_container4_vec.push_back(max_coordinate_container4);
+		max_coordinate_container5_vec.push_back(max_coordinate_container5);*/
+
+		if (all_max_coordinate_vec.size() == 0)
+		{
+			all_max_coordinate_vec[0].push_back(max_coordinate_person1);
+			all_max_coordinate_vec[1].push_back(max_coordinate_person2);
+			all_max_coordinate_vec[2].push_back(max_coordinate_container1);
+			all_max_coordinate_vec[3].push_back(max_coordinate_container2);
+			all_max_coordinate_vec[4].push_back(max_coordinate_container3);
+			all_max_coordinate_vec[5].push_back(max_coordinate_container4);
+			all_max_coordinate_vec[6].push_back(max_coordinate_container5);
+		}
 		///////////////////////////////////////////////////////////
 
 		// ↑find distance//
 
 
 
-
-
 		// plot onto Gnuplot //
-
+		//gnuplot_mapping(all_max_coordinate_vec);
 
 
 		// //
@@ -1400,6 +1458,7 @@ std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
 	float distance;
 	std::vector<float> distance_vec;
 
+	//昇順に並び替える際に使う
 	float tmp_distance;
 	float tmp_x;
 	float tmp_y;
@@ -1477,8 +1536,69 @@ std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
 
 
 // Gnuplotに代表点をプロットする
-int gnuplot_mapping()
+int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate)
 {
+	FILE *gid;
+	gid = _popen("C:/Win64App/gnuplot/bin/gnuplot.exe", "w");
 
+	fprintf(gid, "unset multiplot\n");
+
+	fprintf(gid, "set multiplot\n");
+	fprintf(gid, "set size ratio -1\n");
+	fprintf(gid, "set xl 'X[m]'\n");
+	fprintf(gid, "set yl 'Z[m]'\n");
+	fprintf(gid, "set xr [-30:10]\n");
+	fprintf(gid, "set yr [0:40]\n");
+
+	fprintf(gid, "set key left outside\n");
+	fflush(gid);
+
+
+	fprintf(gid, "set lmargin screen 0.2\n");
+	fprintf(gid, "set rmargin screen 0.8\n");
+	fprintf(gid, "set tmargin screen 0.8\n");
+	fprintf(gid, "set bmargin screen 0.2\n");
+
+	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Person'\n");
+
+	for (size_t i = 0; i < all_max_coordinate.size() - 3; i++)
+	{
+		for (size_t j = 0; j < all_max_coordinate[i].size(); j++)
+		{
+			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+		}
+
+		fprintf(gid, "\n\n");
+
+	}
+
+	fprintf(gid, "e\n");
+	fflush(gid);
+
+	fprintf(gid, "set lmargin screen 0.2\n");
+	fprintf(gid, "set rmargin screen 0.8\n");
+	fprintf(gid, "set tmargin screen 0.8\n");
+	fprintf(gid, "set bmargin screen 0.2\n");
+	fprintf(gid, "set key right outside\n");
+
+	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Container'\n");
+
+	for (size_t i = 2; i < all_max_coordinate.size(); i++)
+	{
+		for (size_t j = 0; j < all_max_coordinate[i].size(); j++)
+		{
+			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+		}
+
+		fprintf(gid, "\n\n");
+	}
+
+	fprintf(gid, "e\n");
+	fflush(gid);
+
+	fprintf(gid, "pause 0.5\n");
+	fflush(gid);
+
+	return 0;
 }
 
