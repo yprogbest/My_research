@@ -1,0 +1,351 @@
+#include "stdafx.h"
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <Windows.h>
+#include <fstream> //テキストファイルを扱うために用意
+#include <string>
+#include <process.h>
+#include <time.h>
+#include <random>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/tracking.hpp>
+#include <opencv2/imgproc.hpp>
+
+
+
+//プロトタイプ宣言
+int lecture();
+int menu_screen(void);
+int disply_movie(void);
+int tracker_main(void);
+int tracker_init(cv::Ptr<cv::TrackerTLD> &tracker, cv::Rect2d &rect);
+//int result_RGB_HSV();
+
+
+
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, const char* argv[])
+{
+	int n = 0; //画像から動画を作成する際のフレーム数
+	int nCommand;
+	int nFlag;
+	int track_code;
+
+	nFlag = 1;
+
+	while (nFlag)
+	{
+		nCommand = menu_screen();
+
+		switch (nCommand)
+		{
+
+		case 0:
+			lecture();
+
+			break;
+
+
+
+		case 1:
+			//動画の保存
+			disply_movie();
+
+			break;
+
+
+
+			// エラーが出て実行できない
+		case 2:
+			track_code = tracker_main();
+
+			break;
+
+		case 3:
+			//RGB値とHSV値の書き出し
+//			result_RGB_HSV();
+
+			break;
+
+
+		case 4:
+			//顔検出
+
+
+			break;
+
+
+		case 99:
+			nFlag = -1;
+			exit(1);
+
+
+		}
+
+	}
+
+
+}
+
+
+
+
+
+//メニュー画面の関数
+int menu_screen()
+{
+	int ncommand;
+
+	printf("\n");
+	printf("----------------------------------------------------\n");
+	printf("<<0>>:授業用\n");
+	printf("<<1>>:動画の保存\n");
+	printf("<<2>>:物体追跡\n");
+	printf("<<3>>:RGB値の書き出し\n");
+	printf("<<4>>:顔検出\n");
+	printf("<<5>>:○○\n");
+	printf("<99>>:終了します．\n");
+	printf("----------------------------------------------------\n");
+	printf("\n");
+
+	printf("command=");
+	scanf_s("%d", &ncommand);
+
+	return ncommand;
+
+}
+
+
+
+
+
+int lecture()
+{
+	//std::cout << "Hello" << std::endl;
+
+	int x, y;
+
+	Mat img;
+	std::string img_name = "D://M1//Advanced_Food_System_Studies//1//image//image27.png";
+	img = cv::imread(img_name);
+
+
+
+	int r;
+	int g;
+	int b;
+
+
+	for (y = 0; y < img.rows; y++)
+	{
+		for (x = 0; x < img.cols; x++)
+		{
+			r = img.at<cv::Vec3b>(y, x)[0];//R
+			g = img.at<cv::Vec3b>(y, x)[1];//G
+			b = img.at<cv::Vec3b>(y, x)[2];//B
+
+			printf("R=%d\tG=%d\tB=%d\n", r, g, b);
+		}
+	}
+
+
+
+
+
+
+	return 0;
+}
+
+
+
+
+
+int disply_movie(void)
+{
+	int i = 0;
+	std::string image_name;
+	Mat frame;
+
+	Mat frame_gray;
+
+	VideoCapture cap(0, cv::CAP_DSHOW);
+
+	int w = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	int h = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+
+
+	VideoWriter writer("D:\\M1\\Advanced_Food_System_Studies\\1\\movie\\recording.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
+
+	if (!cap.isOpened()) return -1;
+
+
+	namedWindow("image", WINDOW_AUTOSIZE);
+
+
+	while (1)
+	{
+
+		cap >> frame;
+
+
+		//グレイ化
+
+
+
+		cv::imshow("image", frame);
+
+
+		//動画から画像を取り出し，フォルダに保存
+		image_name = "D:\\M1\\Advanced_Food_System_Studies\\1\\image\\image" + std::to_string(i) + ".png";
+		cv::imwrite(image_name, frame);
+
+
+		//動画を保存
+		writer << frame;
+
+
+		if (waitKey(30) >= 0) break;
+
+
+
+		i++;
+
+	}
+
+
+	cap.release();//読み込み用のオブジェクトを解放
+	writer.release();//書き込み用のオブジェクトを解放
+	destroyAllWindows();//ウィンドウを破棄
+
+	return 0;
+}
+
+
+
+
+
+int tracker_main(void)
+{
+	cv::Ptr<cv::Tracker> tracker = cv::TrackerTLD::create();
+
+
+
+
+	cv::Rect2d roi;
+
+	
+	
+
+
+	cv::Scalar color = cv::Scalar(0, 255, 0);
+	cv::Mat frame;
+
+
+	cv::VideoCapture cap(0);
+	if (!cap.isOpened())
+	{
+		std::cout << "Can not open camera!" << std::endl;
+		return -1;
+	}
+
+
+	cap >> frame;
+	imshow("frame", frame);
+
+	roi = selectROI("frame", frame);
+	tracker->init(frame, roi);
+
+	cv::destroyWindow("frame");
+
+	while (true){
+		cap >> frame;
+		if (frame.empty())
+		{
+			break;
+		}
+	
+
+
+		//更新
+		tracker->update(frame, roi);
+
+		//結果を表示
+		cv::rectangle(frame, roi, color, 1, 1);
+
+		cv::imshow("tracker", frame);
+
+
+		char k = waitKey(1);
+		if (k == 'q')break;
+
+	}
+
+	cv::destroyWindow("tracker");
+	return 0;
+
+}
+
+
+//MedianFlowによる物体追跡（https://qiita.com/atsisy/items/af0670207535b7cd145f）
+int tracker_init(cv::Ptr<cv::TrackerTLD> &tracker, cv::Rect2d &rect)
+{
+	cv::VideoCapture cap(0);
+	if (!cap.isOpened())
+	{
+		std::cout << "Can not open camera!" << std::endl;
+		return -1;
+	}
+
+	cv::Mat frame;
+	cv::namedWindow("image", WINDOW_AUTOSIZE);
+
+	while (1)
+	{
+		cap >> frame;
+		if (frame.empty())
+		{
+			std::cout << "Faild to read a frame!" << std::endl;
+			cv::destroyAllWindows();
+			break;
+		}
+
+
+		cv::imshow("image", frame);
+
+
+
+
+		switch (cv::waitKey(1))
+		{
+		case 'q':
+			return -1;
+
+		case 't':
+
+			rect = cv::selectROI("tracker", frame);
+			tracker->init(frame, rect);
+
+			cv::destroyAllWindows();
+
+			return 1;
+
+
+		default:
+			break;
+		}
+
+	}
+
+	return 0;
+}
+
+
