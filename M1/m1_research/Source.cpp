@@ -864,19 +864,16 @@ int object_tracking() {
 
 		// Storing the LiDAR points information into the 2D vector
 		std::tie(gather_represent_distance_person, gather_represent_coordinate_person) = gather_representive_point(person_max_coordinate);
-		std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
+		//std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
 
 
-		for (int j = 0; j < gather_represent_distance_person.size(); j++)
+		for (int i = 0; i < gather_represent_distance_person.size(); i++)
 		{
-			for (int i = 0; i < gather_represent_distance_person[j].size(); i++)
+			for (int j = 0; j < gather_represent_distance_person[i].size(); j++)
 			{
-				printf("gather_represent_distance_person[%d][%d]=%lf\n", j, i, gather_represent_distance_person[j][i]);
+				printf("max_distance_vec[%d][%d]=%lf\n", i, j, gather_represent_distance_person[i][j]);
 			}
 		}
-		
-
-
 		///////////////////////////////////////////////////////////
 
 		// ↑find representive point//
@@ -1638,77 +1635,104 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 
 
 // Gathering the representive LiDAR points of each object
-std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate)
+std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate_vec)
 {
+	Point3f max_coordinate;
+	vector<Point3f> max_coordinate_vec_copy;
+
 	float distance;
 	Point3f coordinate;
 
 	vector<float> buf_max_distance;
 	vector<Point3f> buf_max_coordinate;
 
-	vector<vector<float>> max_distance_vec;
-	vector<vector<Point3f>> max_coordinate_vec;
+	vector<vector<float>> max_distance_2vec;
+	vector<vector<Point3f>> max_coordinate_2vec;
 
-	// 2次元配列の核配列内の列数
+	// 2次元配列の各配列内の列数
 	int each_vec_size;
 
 	float diff_distance;
-	float threhold = 1.0;
+	float threhold = 2.0;
 	
 
 
-	for (int f = 0; f < max_coordinate.size(); f++)
+	for (int num = 0; num < max_coordinate_vec.size(); num++)
 	{
-		coordinate.x = max_coordinate[f].x;
-		coordinate.y = max_coordinate[f].y;
-		coordinate.z = max_coordinate[f].z;
+		max_coordinate_vec_copy.clear();
+		max_coordinate_vec_copy.shrink_to_fit();
 
-		distance = coordinate.x*coordinate.x + coordinate.y*coordinate.y + coordinate.z*coordinate.z;
-		distance = sqrt(distance);
+		max_coordinate = max_coordinate_vec[num];
+		max_coordinate_vec_copy.push_back(max_coordinate);
 
-
-		if (max_coordinate.size() == 0)
+		for (int f = 0; f < max_coordinate_vec_copy.size(); f++)
 		{
-			buf_max_distance.push_back(distance);
-			buf_max_coordinate.push_back(coordinate);
+			coordinate.x = max_coordinate_vec_copy[f].x;
+			coordinate.y = max_coordinate_vec_copy[f].y;
+			coordinate.z = max_coordinate_vec_copy[f].z;
 
-			max_distance_vec.push_back(buf_max_distance);
-			max_coordinate_vec.push_back(buf_max_coordinate);
-		}
-		else
-		{
-			for (int k = 0; k < max_distance_vec.size(); k++)
+			distance = coordinate.x*coordinate.x + coordinate.y*coordinate.y + coordinate.z*coordinate.z;
+			distance = sqrt(distance);
+
+
+			if (max_coordinate_2vec.size() == 0)
 			{
-				each_vec_size = int(max_distance_vec[k].size());
-
 				buf_max_distance.clear();
 				buf_max_distance.shrink_to_fit();
 				buf_max_coordinate.clear();
 				buf_max_coordinate.shrink_to_fit();
 
 
-				// Calculating the difference between the current point and previous point  
-				diff_distance = abs(distance - max_distance_vec[k][each_vec_size - 1]);
+				buf_max_distance.push_back(distance);
+				buf_max_coordinate.push_back(coordinate);
 
-				if (diff_distance <= threhold)
-				{
-					max_distance_vec[k].push_back(distance);
-					max_coordinate_vec[k].push_back(coordinate);
-				}
-				else
-				{
-					buf_max_distance.push_back(distance);
-					buf_max_coordinate.push_back(coordinate);
+				max_distance_2vec.push_back(buf_max_distance);
+				max_coordinate_2vec.push_back(buf_max_coordinate);
 
-					max_distance_vec.push_back(buf_max_distance);
-					max_coordinate_vec.push_back(buf_max_coordinate);
+
+				/*for (int i = 0; i < max_distance_2vec.size(); i++)
+				{
+					printf("%lf\n", buf_max_distance[i]);
+				}*/
+
+			}
+			else
+			{
+				for (int k = 0; k < max_distance_2vec.size(); k++)
+				{
+					each_vec_size = int(max_distance_2vec[k].size());
+
+					buf_max_distance.clear();
+					buf_max_distance.shrink_to_fit();
+					buf_max_coordinate.clear();
+					buf_max_coordinate.shrink_to_fit();
+
+
+					// Calculating the difference between the current point and previous point  
+					diff_distance = abs(distance - max_distance_2vec[k][each_vec_size - 1]);
+
+					
+					if (diff_distance <= threhold)
+					{
+						max_distance_2vec[k].push_back(distance);
+						max_coordinate_2vec[k].push_back(coordinate);
+					}
+					else
+					{
+						buf_max_distance.push_back(distance);
+						buf_max_coordinate.push_back(coordinate);
+
+						max_distance_2vec.push_back(buf_max_distance);
+						max_coordinate_2vec.push_back(buf_max_coordinate);
+					}
 				}
 			}
 		}
+		
 	}
 
 
-	return{ max_distance_vec ,max_coordinate_vec };
+	return{ max_distance_2vec ,max_coordinate_2vec };
 }
 
 
