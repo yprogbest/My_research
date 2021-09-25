@@ -864,14 +864,14 @@ int object_tracking() {
 
 		// Storing the LiDAR points information into the 2D vector
 		std::tie(gather_represent_distance_person, gather_represent_coordinate_person) = gather_representive_point(person_max_coordinate);
-		//std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
+		std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
 
 
-		for (int i = 0; i < gather_represent_distance_person.size(); i++)
+		for (int i = 0; i < gather_represent_distance_container.size(); i++)
 		{
-			for (int j = 0; j < gather_represent_distance_person[i].size(); j++)
+			for (int j = 0; j < gather_represent_distance_container[i].size(); j++)
 			{
-				printf("max_distance_vec[%d][%d]=%lf\n", i, j, gather_represent_distance_person[i][j]);
+				printf("gather_represent_distance_container[%d][%d]=%lf\n", i, j, gather_represent_distance_container[i][j]);
 			}
 		}
 		///////////////////////////////////////////////////////////
@@ -1649,11 +1649,19 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 	vector<vector<float>> max_distance_2vec;
 	vector<vector<Point3f>> max_coordinate_2vec;
 
-	// 2次元配列の各配列内の列数
+	//2次元配列の列数
+	int vec_row_count;
+
+	// 2次元配列の各配列内の行数
 	int each_vec_size;
 
+
 	float diff_distance;
-	float threhold = 2.0;
+
+	//diff_distanceが最も最小になる値を取得するために用意
+	float min_diff_distance;
+
+	float threhold = 3.0;
 	
 
 
@@ -1698,34 +1706,45 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 			}
 			else
 			{
+				buf_max_distance.clear();
+				buf_max_distance.shrink_to_fit();
+				buf_max_coordinate.clear();
+				buf_max_coordinate.shrink_to_fit();
+
+
+				min_diff_distance = 1000000;
+
 				for (int k = 0; k < max_distance_2vec.size(); k++)
 				{
-					each_vec_size = int(max_distance_2vec[k].size());
-
-					buf_max_distance.clear();
-					buf_max_distance.shrink_to_fit();
-					buf_max_coordinate.clear();
-					buf_max_coordinate.shrink_to_fit();
+					each_vec_size = (int)max_distance_2vec[k].size();
 
 
 					// Calculating the difference between the current point and previous point  
 					diff_distance = abs(distance - max_distance_2vec[k][each_vec_size - 1]);
 
-					
-					if (diff_distance <= threhold)
+					if (diff_distance < min_diff_distance)
 					{
-						max_distance_2vec[k].push_back(distance);
-						max_coordinate_2vec[k].push_back(coordinate);
+						min_diff_distance = diff_distance;
+						vec_row_count = k;
 					}
-					else
-					{
-						buf_max_distance.push_back(distance);
-						buf_max_coordinate.push_back(coordinate);
 
-						max_distance_2vec.push_back(buf_max_distance);
-						max_coordinate_2vec.push_back(buf_max_coordinate);
-					}
 				}
+
+
+				if (min_diff_distance <= threhold)
+				{
+					max_distance_2vec[vec_row_count].push_back(distance);
+					max_coordinate_2vec[vec_row_count].push_back(coordinate);
+				}
+				else
+				{
+					buf_max_distance.push_back(distance);
+					buf_max_coordinate.push_back(coordinate);
+
+					max_distance_2vec.push_back(buf_max_distance);
+					max_coordinate_2vec.push_back(buf_max_coordinate);
+				}
+
 			}
 		}
 		
