@@ -65,9 +65,10 @@ int yolo_box_coordinate();
 int object_tracking();
 int distance_hist(std::vector<cv::Point3f> obj_lidar);
 int max_distance_hist(int hist[]);
-std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar);
-int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate);
-
+Point3f get_median(std::vector<cv::Point3f> obj_lidar); //修正後
+//std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar); //修正前
+std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate);
+int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate);
 
 
 int nCommand;
@@ -464,17 +465,10 @@ int object_tracking() {
 	float max_distance_container4;
 	float max_distance_container5;
 
-	//距離の最大値　push_back用
-	vector<float>max_distance_person1_vec;
-	vector<float>max_distance_person2_vec;
-	vector<float>max_distance_container1_vec;
-	vector<float>max_distance_container2_vec;
-	vector<float>max_distance_container3_vec;
-	vector<float>max_distance_container4_vec;
-	vector<float>max_distance_container5_vec;
-	vector<vector<float>> all_max_distance_vec;
+	vector<float> person_max_distance;
+	vector<float> container_max_distance;
 
-
+	
 	// 最大の距離の時のx,y,z座標
 	Point3f max_coordinate_person1;
 	Point3f max_coordinate_person2;
@@ -484,20 +478,21 @@ int object_tracking() {
 	Point3f max_coordinate_container4;
 	Point3f max_coordinate_container5;
 
-	// 最大の距離の時のx,y,z座標 push_back用
-	vector<Point3f>max_coordinate_person1_vec;
-	vector<Point3f>max_coordinate_person2_vec;
-	vector<Point3f>max_coordinate_container1_vec;
-	vector<Point3f>max_coordinate_container2_vec;
-	vector<Point3f>max_coordinate_container3_vec;
-	vector<Point3f>max_coordinate_container4_vec;
-	vector<Point3f>max_coordinate_container5_vec;
-	vector<vector<Point3f>> all_max_coordinate_vec;
+	vector<Point3f> person_max_coordinate;
+	vector<Point3f> container_max_coordinate;
+
+
+	//代表点を集める用に配列を用意
+	vector<vector<float>> gather_represent_distance_person;
+	vector<vector<float>> gather_represent_distance_container;
+
+	vector<vector<Point3f>> gather_represent_coordinate_person;
+	vector<vector<Point3f>> gather_represent_coordinate_container;
+
 
 
 
 	//mask画像の色（person→赤，container→青）
-	int b, g, r;
 	int b_lidar, g_lidar, r_lidar;
 	
 
@@ -606,6 +601,10 @@ int object_tracking() {
 	cv::VideoWriter out_frame(out_put_image_file_path+"/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
 
 
+	//gnuplot
+	FILE *gid;
+	gid = _popen("C:/Win64App/gnuplot/bin/gnuplot.exe", "w");
+
 
 
 	while (1)
@@ -640,12 +639,9 @@ int object_tracking() {
 		if (!lidar_text_file.is_open())
 		{
 			std::cerr << "Can not open " + sFilePath_point_cloud_on_image << std::endl;
-
 			return -1;
-
 		}
-
-
+		
 
 		//Maskrcnnの認識範囲内の『LiDAR』の点群を取得
 		while (1)
@@ -785,7 +781,7 @@ int object_tracking() {
 		}
 
 
-		// find distance //
+		// find representive point //
 		// use fistgram /////////////////////////////////////////
 
 		////person1
@@ -815,67 +811,82 @@ int object_tracking() {
 
 
 		// use median/////////////////////////////////////////////
-		std::tie(max_distance_person1, max_coordinate_person1) = get_median(person_lidar1);
+		
+		//修正後
+		max_coordinate_person1 = get_median(person_lidar1);
+		max_coordinate_person2 = get_median(person_lidar2);
+		max_coordinate_container1 = get_median(container_lidar1);
+		max_coordinate_container2 = get_median(container_lidar2);
+		max_coordinate_container3 = get_median(container_lidar3);
+		max_coordinate_container4 = get_median(container_lidar4);
+		max_coordinate_container5 = get_median(container_lidar5);
+
+
+		/*max_distance_person1 = max_coordinate_person1.x*max_coordinate_person1.x + max_coordinate_person1.y*max_coordinate_person1.y + max_coordinate_person1.z*max_coordinate_person1.z;
+		max_distance_person1 = sqrt(max_distance_person1);
+		printf("max_distance_person1=%lf\n", max_distance_person1);*/
+
+
+		//修正前
+		/*std::tie(max_distance_person1, max_coordinate_person1) = get_median(person_lidar1);
 		std::tie(max_distance_person2, max_coordinate_person1) = get_median(person_lidar2);
 		std::tie(max_distance_container1, max_coordinate_container1) = get_median(container_lidar1);
 		std::tie(max_distance_container2, max_coordinate_container2) = get_median(container_lidar2);
 		std::tie(max_distance_container3, max_coordinate_container3) = get_median(container_lidar3);
 		std::tie(max_distance_container4, max_coordinate_container4) = get_median(container_lidar4);
-		std::tie(max_distance_container5, max_coordinate_container5) = get_median(container_lidar5);
+		std::tie(max_distance_container5, max_coordinate_container5) = get_median(container_lidar5);*/
 
-		//printf("person_median_x = %lf\n", max_coordinate_person1.x);
 
+		//max distance
+		/*person_max_distance.push_back(max_distance_person1);
+		person_max_distance.push_back(max_distance_person2);
+		container_max_distance.push_back(max_distance_container1);
+		container_max_distance.push_back(max_distance_container2);
+		container_max_distance.push_back(max_distance_container3);
+		container_max_distance.push_back(max_distance_container4);
+		container_max_distance.push_back(max_distance_container5);*/
+
+
+		//coordinate of the max distance
+		person_max_coordinate.push_back(max_coordinate_person1);
+		person_max_coordinate.push_back(max_coordinate_person2);
+		container_max_coordinate.push_back(max_coordinate_container1);
+		container_max_coordinate.push_back(max_coordinate_container2);
+		container_max_coordinate.push_back(max_coordinate_container3);
+		container_max_coordinate.push_back(max_coordinate_container4);
+		container_max_coordinate.push_back(max_coordinate_container5);
+
+		/*for (int i = 0; i < person_max_distance.size(); i++)
+		{
+			printf("person_max_distance[%d] = %lf\n", i, person_max_distance[i]);
+		}*/
+
+
+		// Storing the LiDAR points information into the 2D vector
+		std::tie(gather_represent_distance_person, gather_represent_coordinate_person) = gather_representive_point(person_max_coordinate);
+		std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
+
+
+		for (int j = 0; j < gather_represent_distance_person.size(); j++)
+		{
+			for (int i = 0; i < gather_represent_distance_person[j].size(); i++)
+			{
+				printf("gather_represent_distance_person[%d][%d]=%lf\n", j, i, gather_represent_distance_person[j][i]);
+			}
+		}
 		
 
-		// ここから（2次元配列の使い方）
-		/*max_distance_person1_vec.push_back(max_distance_person1);
-		max_distance_person2_vec.push_back(max_distance_person2);
-		max_distance_container1_vec.push_back(max_distance_container1);
-		max_distance_container2_vec.push_back(max_distance_container2);
-		max_distance_container3_vec.push_back(max_distance_container3);
-		max_distance_container4_vec.push_back(max_distance_container4);
-		max_distance_container5_vec.push_back(max_distance_container5);*/
-		if (all_max_distance_vec.size() == 0)
-		{
-			all_max_distance_vec[0].push_back(max_distance_person1);
-			all_max_distance_vec[1].push_back(max_distance_person2);
-			all_max_distance_vec[2].push_back(max_distance_container1);
-			all_max_distance_vec[3].push_back(max_distance_container2);
-			all_max_distance_vec[4].push_back(max_distance_container3);
-			all_max_distance_vec[5].push_back(max_distance_container4);
-			all_max_distance_vec[6].push_back(max_distance_container5);
-		}
-	
-		/*max_coordinate_person1_vec.push_back(max_coordinate_person1);
-		max_coordinate_person2_vec.push_back(max_coordinate_person2);
-		max_coordinate_container1_vec.push_back(max_coordinate_container1);
-		max_coordinate_container2_vec.push_back(max_coordinate_container2);
-		max_coordinate_container3_vec.push_back(max_coordinate_container3);
-		max_coordinate_container4_vec.push_back(max_coordinate_container4);
-		max_coordinate_container5_vec.push_back(max_coordinate_container5);*/
 
-		if (all_max_coordinate_vec.size() == 0)
-		{
-			all_max_coordinate_vec[0].push_back(max_coordinate_person1);
-			all_max_coordinate_vec[1].push_back(max_coordinate_person2);
-			all_max_coordinate_vec[2].push_back(max_coordinate_container1);
-			all_max_coordinate_vec[3].push_back(max_coordinate_container2);
-			all_max_coordinate_vec[4].push_back(max_coordinate_container3);
-			all_max_coordinate_vec[5].push_back(max_coordinate_container4);
-			all_max_coordinate_vec[6].push_back(max_coordinate_container5);
-		}
 		///////////////////////////////////////////////////////////
 
-		// ↑find distance//
-
-
-
-		// plot onto Gnuplot //
-		//gnuplot_mapping(all_max_coordinate_vec);
+		// ↑find representive point//
 
 
 		// //
 
+
+		// plot onto Gnuplot //
+		//gnuplot_mapping(gid, all_max_coordinate_vec);
 
 
 
@@ -930,7 +941,11 @@ int object_tracking() {
 		imagePoints_LiDAR2ZED.clear();
 		imagePoints_LiDAR2ZED.shrink_to_fit();
 
+
 	}
+
+
+	
 
 
 	frame_color.release();
@@ -1451,9 +1466,8 @@ int max_distance_hist(int hist[])
 }
 
 
-
-//代表点の算出手法2(Median)
-std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
+//代表点の算出手法2(Median)←修正後（x,y,zのmedian値から距離distanceを算出する方法に変更）
+Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 {
 	float distance;
 	std::vector<float> distance_vec;
@@ -1464,7 +1478,6 @@ std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
 	float tmp_y;
 	float tmp_z;
 
-	float median_distance;
 	Point3f median_lidar_point;
 
 
@@ -1511,36 +1524,199 @@ std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
 	// find median value
 	if (distance_vec.size() == 0)
 	{
-		median_distance = 0.0;
 		median_lidar_point.x = 0.0;
 		median_lidar_point.y = 0.0;
 		median_lidar_point.z = 0.0;
 	}
 	else if (distance_vec.size() % 2 == 1)
 	{
-		median_distance = distance_vec[(int)((int)distance_vec.size() / 2)];
 		median_lidar_point.x = obj_lidar[(int)((int)obj_lidar.size() / 2)].x;
 		median_lidar_point.y = obj_lidar[(int)((int)obj_lidar.size() / 2)].y;
 		median_lidar_point.z = obj_lidar[(int)((int)obj_lidar.size() / 2)].z;
 	}
 	else if (distance_vec.size() % 2 == 0)
 	{
-		median_distance = (distance_vec[(int)((int)distance_vec.size() / 2) - 1] + distance_vec[(int)((int)distance_vec.size() / 2)]) / 2.0;
-		median_lidar_point.x = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
-		median_lidar_point.y = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
-		median_lidar_point.z = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].z + obj_lidar[(int)((int)obj_lidar.size() / 2)].z) / 2.0;
+		median_lidar_point.x = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
+		median_lidar_point.y = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
+		median_lidar_point.z = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].z + obj_lidar[(int)((int)obj_lidar.size() / 2)].z) / 2.0;
 	}
 
-	return{ median_distance, median_lidar_point };
+
+
+
+	return median_lidar_point;
 }
 
 
-// Gnuplotに代表点をプロットする
-int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate)
-{
-	FILE *gid;
-	gid = _popen("C:/Win64App/gnuplot/bin/gnuplot.exe", "w");
 
+//代表点の算出手法2(Median)←修正前
+
+//std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar)
+//{
+//	float distance;
+//	std::vector<float> distance_vec;
+//
+//	//昇順に並び替える際に使う
+//	float tmp_distance;
+//	float tmp_x;
+//	float tmp_y;
+//	float tmp_z;
+//
+//	float median_distance;
+//	Point3f median_lidar_point;
+//
+//
+//	// find a distance from the sensor to the object
+//	for (int i = 0; i < obj_lidar.size(); i++)
+//	{
+//		distance = obj_lidar[i].x * obj_lidar[i].x + obj_lidar[i].y * obj_lidar[i].y + obj_lidar[i].z * obj_lidar[i].z;
+//		distance = sqrt(distance);
+//
+//		distance_vec.push_back(distance);
+//	}
+//
+//	//Sort in descending order
+//	for (int i = 0; i < distance_vec.size(); i++)
+//	{
+//		for (int h = i + 1; h < distance_vec.size(); h++)
+//		{
+//			if (distance_vec[i] < distance_vec[h])
+//			{
+//				// distance
+//				tmp_distance = distance_vec[h];
+//				distance_vec[h] = distance_vec[i];
+//				distance_vec[i] = tmp_distance;
+//
+//				// x
+//				tmp_x = obj_lidar[h].x;
+//				obj_lidar[h].x = obj_lidar[i].x;
+//				obj_lidar[i].x = tmp_x;
+//
+//				// y
+//				tmp_y = obj_lidar[h].y;
+//				obj_lidar[h].y = obj_lidar[i].y;
+//				obj_lidar[i].y = tmp_y;
+//
+//				// z
+//				tmp_z = obj_lidar[h].z;
+//				obj_lidar[h].z = obj_lidar[i].z;
+//				obj_lidar[i].z = tmp_z;
+//			}
+//		}
+//	}
+//
+//
+//	// find median value
+//	if (distance_vec.size() == 0)
+//	{
+//		median_distance = 0.0;
+//		median_lidar_point.x = 0.0;
+//		median_lidar_point.y = 0.0;
+//		median_lidar_point.z = 0.0;
+//	}
+//	else if (distance_vec.size() % 2 == 1)
+//	{
+//		median_distance = distance_vec[(int)((int)distance_vec.size() / 2)];
+//		median_lidar_point.x = obj_lidar[(int)((int)obj_lidar.size() / 2)].x;
+//		median_lidar_point.y = obj_lidar[(int)((int)obj_lidar.size() / 2)].y;
+//		median_lidar_point.z = obj_lidar[(int)((int)obj_lidar.size() / 2)].z;
+//	}
+//	else if (distance_vec.size() % 2 == 0)
+//	{
+//		median_distance = (distance_vec[(int)((int)distance_vec.size() / 2) - 1] + distance_vec[(int)((int)distance_vec.size() / 2)]) / 2.0;
+//		median_lidar_point.x = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
+//		median_lidar_point.y = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
+//		median_lidar_point.z = (obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].z + obj_lidar[(int)((int)obj_lidar.size() / 2)].z) / 2.0;
+//	}
+//
+//
+//
+//
+//	return{ median_distance, median_lidar_point };
+//}
+
+
+
+// Gathering the representive LiDAR points of each object
+std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate)
+{
+	float distance;
+	Point3f coordinate;
+
+	vector<float> buf_max_distance;
+	vector<Point3f> buf_max_coordinate;
+
+	vector<vector<float>> max_distance_vec;
+	vector<vector<Point3f>> max_coordinate_vec;
+
+	// 2次元配列の核配列内の列数
+	int each_vec_size;
+
+	float diff_distance;
+	float threhold = 1.0;
+	
+
+
+	for (int f = 0; f < max_coordinate.size(); f++)
+	{
+		coordinate.x = max_coordinate[f].x;
+		coordinate.y = max_coordinate[f].y;
+		coordinate.z = max_coordinate[f].z;
+
+		distance = coordinate.x*coordinate.x + coordinate.y*coordinate.y + coordinate.z*coordinate.z;
+		distance = sqrt(distance);
+
+
+		if (max_coordinate.size() == 0)
+		{
+			buf_max_distance.push_back(distance);
+			buf_max_coordinate.push_back(coordinate);
+
+			max_distance_vec.push_back(buf_max_distance);
+			max_coordinate_vec.push_back(buf_max_coordinate);
+		}
+		else
+		{
+			for (int k = 0; k < max_distance_vec.size(); k++)
+			{
+				each_vec_size = int(max_distance_vec[k].size());
+
+				buf_max_distance.clear();
+				buf_max_distance.shrink_to_fit();
+				buf_max_coordinate.clear();
+				buf_max_coordinate.shrink_to_fit();
+
+
+				// Calculating the difference between the current point and previous point  
+				diff_distance = abs(distance - max_distance_vec[k][each_vec_size - 1]);
+
+				if (diff_distance <= threhold)
+				{
+					max_distance_vec[k].push_back(distance);
+					max_coordinate_vec[k].push_back(coordinate);
+				}
+				else
+				{
+					buf_max_distance.push_back(distance);
+					buf_max_coordinate.push_back(coordinate);
+
+					max_distance_vec.push_back(buf_max_distance);
+					max_coordinate_vec.push_back(buf_max_coordinate);
+				}
+			}
+		}
+	}
+
+
+	return{ max_distance_vec ,max_coordinate_vec };
+}
+
+
+
+
+// Gnuplotに代表点をプロットする
+int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
+{
 	fprintf(gid, "unset multiplot\n");
 
 	fprintf(gid, "set multiplot\n");
@@ -1559,11 +1735,11 @@ int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate)
 	fprintf(gid, "set tmargin screen 0.8\n");
 	fprintf(gid, "set bmargin screen 0.2\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Person'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with points title 'Person' lc 'blue'\n");
 
-	for (size_t i = 0; i < all_max_coordinate.size() - 3; i++)
+	for (int i = 0; i < all_max_coordinate.size() - 3; i++)
 	{
-		for (size_t j = 0; j < all_max_coordinate[i].size(); j++)
+		for (int j = 0; j < all_max_coordinate[i].size(); j++)
 		{
 			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
 		}
@@ -1581,11 +1757,11 @@ int gnuplot_mapping(vector<vector<Point3f>>all_max_coordinate)
 	fprintf(gid, "set bmargin screen 0.2\n");
 	fprintf(gid, "set key right outside\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Container'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with dots title 'Container' lc 'orange'\n");
 
-	for (size_t i = 2; i < all_max_coordinate.size(); i++)
+	for (int i = 2; i < all_max_coordinate.size(); i++)
 	{
-		for (size_t j = 0; j < all_max_coordinate[i].size(); j++)
+		for (int j = 0; j < all_max_coordinate[i].size(); j++)
 		{
 			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
 		}
