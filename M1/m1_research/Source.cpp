@@ -876,33 +876,7 @@ int object_tracking() {
 			}
 		}*/
 
-		//テキストファイルに書き出す
-		std::ofstream gather_represent_distance_person_text;
-		gather_represent_distance_person_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_person_text\\person.txt");
 
-		for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
-		{
-			for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
-			{
-				gather_represent_distance_person_text << gather_represent_coordinate_person[i][j].x << "\t" << gather_represent_coordinate_person[i][j].y << "\t" << gather_represent_coordinate_person[i][j].z << std::endl;
-			}
-
-			gather_represent_distance_person_text << std::endl;
-			gather_represent_distance_person_text << std::endl;
-		}
-
-		std::ofstream gather_represent_distance_container_text;
-		gather_represent_distance_container_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_container_text\\container.txt");
-		for (int i = 0; i < gather_represent_coordinate_container.size(); i++)
-		{
-			for (int j = 0; j < gather_represent_coordinate_container[i].size(); j++)
-			{
-				gather_represent_distance_container_text << gather_represent_coordinate_container[i][j].x << "\t" << gather_represent_coordinate_container[i][j].y << "\t" << gather_represent_coordinate_container[i][j].z << std::endl;
-			}
-
-			gather_represent_distance_container_text << std::endl;
-			gather_represent_distance_container_text << std::endl;
-		}
 		///////////////////////////////////////////////////////////
 
 		// ↑find representive point//
@@ -912,7 +886,7 @@ int object_tracking() {
 
 
 		// plot onto Gnuplot //
-		//gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
+		gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
 
 
 
@@ -969,6 +943,34 @@ int object_tracking() {
 	}
 
 
+
+	//テキストファイルに書き出す
+	/*std::ofstream gather_represent_distance_person_text;
+	gather_represent_distance_person_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_person_text\\person.txt");
+
+	for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
+	{
+		for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
+		{
+			gather_represent_distance_person_text << gather_represent_coordinate_person[i][j].x << "\t" << gather_represent_coordinate_person[i][j].y << "\t" << gather_represent_coordinate_person[i][j].z << std::endl;
+		}
+
+		gather_represent_distance_person_text << std::endl;
+		gather_represent_distance_person_text << std::endl;
+	}
+
+	std::ofstream gather_represent_distance_container_text;
+	gather_represent_distance_container_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_container_text\\container.txt");
+	for (int i = 0; i < gather_represent_coordinate_container.size(); i++)
+	{
+		for (int j = 0; j < gather_represent_coordinate_container[i].size(); j++)
+		{
+			gather_represent_distance_container_text << gather_represent_coordinate_container[i][j].x << "\t" << gather_represent_coordinate_container[i][j].y << "\t" << gather_represent_coordinate_container[i][j].z << std::endl;
+		}
+
+		gather_represent_distance_container_text << std::endl;
+		gather_represent_distance_container_text << std::endl;
+	}*/
 	
 
 
