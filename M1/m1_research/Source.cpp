@@ -1806,7 +1806,7 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "set tmargin screen 0.8\n");
 	fprintf(gid, "set bmargin screen 0.2\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Person' lc 'blue'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Person' lc 'blue'\n");
 
 	for (int i = 0; i < all_max_coordinate_obj1.size(); i++)
 	{
@@ -1829,7 +1829,7 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "set bmargin screen 0.2\n");
 	fprintf(gid, "set key right outside\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Container' lc 'orange'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Container' lc 'orange'\n");
 
 	for (int i = 0; i < all_max_coordinate_obj2.size(); i++)
 	{
