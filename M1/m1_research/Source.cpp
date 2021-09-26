@@ -68,7 +68,8 @@ int max_distance_hist(int hist[]);
 Point3f get_median(std::vector<cv::Point3f> obj_lidar); //修正後
 //std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar); //修正前
 std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate);
-int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate);
+int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);//修正後
+//int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //修正前
 
 
 int nCommand;
@@ -867,12 +868,40 @@ int object_tracking() {
 		std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
 
 
-		for (int i = 0; i < gather_represent_distance_container.size(); i++)
+		/*for (int i = 0; i < gather_represent_distance_person.size(); i++)
 		{
-			for (int j = 0; j < gather_represent_distance_container[i].size(); j++)
+			for (int j = 0; j < gather_represent_distance_person[i].size(); j++)
 			{
-				printf("gather_represent_distance_container[%d][%d]=%lf\n", i, j, gather_represent_distance_container[i][j]);
+				printf("gather_represent_distance_person[%d][%d]=%lf\n", i, j, gather_represent_distance_person[i][j]);
 			}
+		}*/
+
+		//テキストファイルに書き出す
+		std::ofstream gather_represent_distance_person_text;
+		gather_represent_distance_person_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_person_text\\person.txt");
+
+		for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
+		{
+			for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
+			{
+				gather_represent_distance_person_text << gather_represent_coordinate_person[i][j].x << "\t" << gather_represent_coordinate_person[i][j].y << "\t" << gather_represent_coordinate_person[i][j].z << std::endl;
+			}
+
+			gather_represent_distance_person_text << std::endl;
+			gather_represent_distance_person_text << std::endl;
+		}
+
+		std::ofstream gather_represent_distance_container_text;
+		gather_represent_distance_container_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_container_text\\container.txt");
+		for (int i = 0; i < gather_represent_coordinate_container.size(); i++)
+		{
+			for (int j = 0; j < gather_represent_coordinate_container[i].size(); j++)
+			{
+				gather_represent_distance_container_text << gather_represent_coordinate_container[i][j].x << "\t" << gather_represent_coordinate_container[i][j].y << "\t" << gather_represent_coordinate_container[i][j].z << std::endl;
+			}
+
+			gather_represent_distance_container_text << std::endl;
+			gather_represent_distance_container_text << std::endl;
 		}
 		///////////////////////////////////////////////////////////
 
@@ -883,7 +912,7 @@ int object_tracking() {
 
 
 		// plot onto Gnuplot //
-		//gnuplot_mapping(gid, all_max_coordinate_vec);
+		//gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
 
 
 
@@ -937,8 +966,6 @@ int object_tracking() {
 
 		imagePoints_LiDAR2ZED.clear();
 		imagePoints_LiDAR2ZED.shrink_to_fit();
-
-
 	}
 
 
@@ -1756,9 +1783,8 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 
 
 
-
-// Gnuplotに代表点をプロットする
-int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
+// Gnuplotに代表点をプロットする（修正後）
+int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2)
 {
 	fprintf(gid, "unset multiplot\n");
 
@@ -1778,18 +1804,19 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
 	fprintf(gid, "set tmargin screen 0.8\n");
 	fprintf(gid, "set bmargin screen 0.2\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with points title 'Person' lc 'blue'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Person' lc 'blue'\n");
 
-	for (int i = 0; i < all_max_coordinate.size() - 3; i++)
+	for (int i = 0; i < all_max_coordinate_obj1.size(); i++)
 	{
-		for (int j = 0; j < all_max_coordinate[i].size(); j++)
+		for (int j = 0; j < all_max_coordinate_obj1[i].size(); j++)
 		{
-			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate_obj1[i][j].x, (double)all_max_coordinate_obj1[i][j].z);
 		}
 
 		fprintf(gid, "\n\n");
 
 	}
+
 
 	fprintf(gid, "e\n");
 	fflush(gid);
@@ -1800,17 +1827,18 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
 	fprintf(gid, "set bmargin screen 0.2\n");
 	fprintf(gid, "set key right outside\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with dots title 'Container' lc 'orange'\n");
+	fprintf(gid, "plot for [i=0:*] '-' index i with lines title 'Container' lc 'orange'\n");
 
-	for (int i = 2; i < all_max_coordinate.size(); i++)
+	for (int i = 0; i < all_max_coordinate_obj2.size(); i++)
 	{
-		for (int j = 0; j < all_max_coordinate[i].size(); j++)
+		for (int j = 0; j < all_max_coordinate_obj2[i].size(); j++)
 		{
-			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate_obj2[i][j].x, (double)all_max_coordinate_obj2[i][j].z);
 		}
 
 		fprintf(gid, "\n\n");
 	}
+
 
 	fprintf(gid, "e\n");
 	fflush(gid);
@@ -1820,4 +1848,74 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
 
 	return 0;
 }
+
+
+
+
+
+
+// Gnuplotに代表点をプロットする（修正前）
+
+//int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate)
+//{
+//	fprintf(gid, "unset multiplot\n");
+//
+//	fprintf(gid, "set multiplot\n");
+//	fprintf(gid, "set size ratio -1\n");
+//	fprintf(gid, "set xl 'X[m]'\n");
+//	fprintf(gid, "set yl 'Z[m]'\n");
+//	fprintf(gid, "set xr [-30:10]\n");
+//	fprintf(gid, "set yr [0:40]\n");
+//
+//	fprintf(gid, "set key left outside\n");
+//	fflush(gid);
+//
+//
+//	fprintf(gid, "set lmargin screen 0.2\n");
+//	fprintf(gid, "set rmargin screen 0.8\n");
+//	fprintf(gid, "set tmargin screen 0.8\n");
+//	fprintf(gid, "set bmargin screen 0.2\n");
+//
+//	fprintf(gid, "plot for [i=0:*] '-' index i with points title 'Person' lc 'blue'\n");
+//
+//	for (int i = 0; i < all_max_coordinate.size() - 3; i++)
+//	{
+//		for (int j = 0; j < all_max_coordinate[i].size(); j++)
+//		{
+//			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+//		}
+//
+//		fprintf(gid, "\n\n");
+//
+//	}
+//
+//	fprintf(gid, "e\n");
+//	fflush(gid);
+//
+//	fprintf(gid, "set lmargin screen 0.2\n");
+//	fprintf(gid, "set rmargin screen 0.8\n");
+//	fprintf(gid, "set tmargin screen 0.8\n");
+//	fprintf(gid, "set bmargin screen 0.2\n");
+//	fprintf(gid, "set key right outside\n");
+//
+//	fprintf(gid, "plot for [i=0:*] '-' index i with dots title 'Container' lc 'orange'\n");
+//
+//	for (int i = 2; i < all_max_coordinate.size(); i++)
+//	{
+//		for (int j = 0; j < all_max_coordinate[i].size(); j++)
+//		{
+//			fprintf(gid, "%lf\t%lf\n", (double)all_max_coordinate[i][j].x, (double)all_max_coordinate[i][j].z);
+//		}
+//
+//		fprintf(gid, "\n\n");
+//	}
+//
+//	fprintf(gid, "e\n");
+//	fflush(gid);
+//
+//	fprintf(gid, "pause 0.5\n");
+//	fflush(gid);
+//
+//	return 0;
+//}
 
