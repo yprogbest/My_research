@@ -52,7 +52,7 @@ def apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5):
     f_object_name.write("-\n")
 
 
-    print(image.shape)
+    #print(image.shape)
 
 
     return mask_image
@@ -71,9 +71,11 @@ def main():
 
     #write the coodinates that were extracted on text
     text_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text/"
+    #text_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text2/"
 
     #write only object name
     text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name/"
+    #text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name2/"
 
 
 
@@ -114,7 +116,7 @@ def main():
         model_dir=os.getcwd())
 
     #学習データの指定
-    model.load_weights("logs/farm20210602T2055/mask_rcnn_farm_0029.h5", by_name=True)
+    model.load_weights("logs/farm20210605T2306/mask_rcnn_farm_0099.h5", by_name=True)
     #model.load_weights("mask_rcnn_coco.h5", by_name=True, xclude=["mrcnn_class_logits", "mrcnn_bbox_fc","mrcnn_bbox", "mrcnn_mask"])
 
 
@@ -124,7 +126,12 @@ def main():
 
     #Use stereo camera
     input_folder = "/home/ecb/instnce_segmentation/Mask_RCNN/"
+
+
     input_folder = input_folder + "image_to_movie_20201117_Container_around_workshop_low_position"
+    #input_folder = input_folder + "image_to_movie_20201223112457"
+
+
     input_image = input_folder + "/out_cam1_remap.mov"
     cap = cv2.VideoCapture(input_image)
 
@@ -215,7 +222,7 @@ def main():
     
 
         cv2.imshow("Output", image)
-        print(image.shape)
+        #print(image.shape)
 
         #save
         video.write(image)

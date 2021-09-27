@@ -140,6 +140,10 @@ def main():
         color = COLORS[classID][::-1]
         label = CLASS_NAMES[classID]
 
+        cv2.imshow("mask",mask)
+        cv2.waitKey()
+
+
         image = apply_mask(f, image, mask, color, alpha=0.5)
 
         

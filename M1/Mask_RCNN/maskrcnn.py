@@ -8,7 +8,56 @@ import imutils
 import random
 import cv2
 import os
-import cv2
+
+
+
+
+# make only mask image
+def apply_mask_binary(image_bin, mask, label,color):
+    """Apply the given mask to the image.
+    """
+
+
+    mask_image = image_bin.copy()
+
+    for c in range(3):
+        #mask_image[:, :, c] = np.where(mask == 0, mask_image[:, :, c]*0, mask_image[:, :, c])
+
+        if label is 'person':
+            if c == 0:
+                image_bin[:, :, c] = np.where(mask == 1, 0,image_bin[:, :, c])
+            elif c == 1:
+                image_bin[:, :, c] = np.where(mask == 1, 0,image_bin[:, :, c])
+            elif c == 2:
+                image_bin[:, :, c] = np.where(mask == 1,color,image_bin[:, :, c])
+
+
+
+        elif label is "container":
+            if c == 0:
+                image_bin[:, :, c] = np.where(mask == 1,color,image_bin[:, :, c])
+            elif c == 1:
+                image_bin[:, :, c] = np.where(mask == 1,0,image_bin[:, :, c])
+            elif c == 2:
+                image_bin[:, :, c] = np.where(mask == 1, 0,image_bin[:, :, c])
+
+
+    height, width = mask_image.shape[:2]
+
+
+    # for j in range(height):
+    #     for i in range(width):
+
+    #         if mask_image[j, i, 0]>0 or mask_image[j, i, 1]>0 or mask_image[j, i, 2]>0:
+    #             mask_image[j, i, 0] = 255
+    #             mask_image[j, i, 1] = 255
+    #             mask_image[j, i, 2] = 255
+
+    #return mask_image
+    return image_bin
+
+
+
 
 
 
@@ -53,7 +102,7 @@ def apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5):
 
 
 
-    print(image.shape)
+    #print(image.shape)
 
 
     return mask_image
@@ -68,10 +117,15 @@ def main():
     num = 0
 
     #write the coodinates that were extracted on text
-    text_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text/"
+    #text_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text/"
+    #text_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text2/"
+    text_dir = "/home/ecb/instance_segmentation/Mask_RCNN/result/dust/"
 
     #write only object name
-    text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name/"
+    #text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name/"
+    #text_object_name_dir = "/home/ecb/instnce_segmentation/Mask_RCNN/result/text_object_name2/"
+    text_object_name_dir = "/home/ecb/instance_segmentation/Mask_RCNN/result/dust2/"
+
 
 
     #CLASS_NAMES =['BG', 'person', 'container']
@@ -111,7 +165,7 @@ def main():
         model_dir=os.getcwd())
 
     #学習データの指定
-    model.load_weights("logs/farm20210602T2055/mask_rcnn_farm_0029.h5", by_name=True)
+    model.load_weights("logs/farm20210605T2306/mask_rcnn_farm_0099.h5", by_name=True)
     #model.load_weights("mask_rcnn_coco.h5", by_name=True, xclude=["mrcnn_class_logits", "mrcnn_bbox_fc","mrcnn_bbox", "mrcnn_mask"])
 
 
@@ -119,9 +173,17 @@ def main():
     #image = cv2.imread("images/image369.png")
     #image = cv2.imread("images/02.jpg")
 
+
     #Use stereo camera
-    input_folder = "/home/ecb/instnce_segmentation/Mask_RCNN/"
+    input_folder = "/home/ecb/instance_segmentation/Mask_RCNN/Movie/"
+
+
     input_folder = input_folder + "image_to_movie_20201117_Container_around_workshop_low_position"
+    #input_folder = input_folder + "image_to_movie_20201223112457"
+    #input_folder = input_folder + "20210609143914"
+
+    
+
     input_image = input_folder + "/out_cam1_remap.mov"
     cap = cv2.VideoCapture(input_image)
 
@@ -133,9 +195,16 @@ def main():
     #size = (width, height)
     frame_rate = 5.0 # フレームレート
     fmt = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') # ファイル形式(ここではmp4)
-    save_folder = "/home/ecb/instnce_segmentation/Mask_RCNN/result/"
+    save_folder = "/home/ecb/instance_segmentation/Mask_RCNN/result/"
     save_movie=save_folder+"output.mov"
     video = cv2.VideoWriter(save_movie, fmt, frame_rate, (width,height)) # ライター作成
+
+
+    #mask_movie
+    # fmt2 = cv2.VideoWriter_fourcc('I','4','2','0')
+    fmt2 = cv2.VideoWriter_fourcc(*"DIVX")
+    mask_save_movie=save_folder+"mask_output.avi"
+    mask_video = cv2.VideoWriter(mask_save_movie, fmt2, frame_rate, (width,height)) 
 
 
 
@@ -145,7 +214,7 @@ def main():
         text  = text_dir + "result" + str(num) + ".txt"
         f = open(text, "w")
 
-        #open file
+        # #open file
         text_object_name  = text_object_name_dir + "result_object_name" + str(num) + ".txt"
         f_object_name = open(text_object_name, "w")
 
@@ -173,7 +242,12 @@ def main():
 
         N = r['rois'].shape[0]
         result_image = image.copy()
+        height, width = image.shape[:2]
+        size=(height,width)
+        mask_result_image = np.zeros_like(image)
         colors = visualize.random_colors(N)
+        colors_person=255
+        colors_container=255
 
         for i in range(0, N):
             classID = r["class_ids"][i]
@@ -185,6 +259,19 @@ def main():
             color = colors[i]
             rgb = (round(color[0] * 255), round(color[1] * 255), round(color[2] * 255))
 
+            #Mask
+            result_image = apply_mask(f, f_object_name, label, result_image, mask, color, alpha=0.5)
+
+
+            #Mask image only
+            if label is "person":
+                mask_result_image = apply_mask_binary(mask_result_image, mask,label,colors_person)
+                colors_person=colors_person-30
+            
+            elif label is "container":
+                mask_result_image = apply_mask_binary(mask_result_image, mask,label,colors_container)
+                colors_container=colors_container-30
+
             #Rect
             visualize.draw_box(result_image, r['rois'][i], rgb)
 
@@ -194,8 +281,7 @@ def main():
             cv2.putText(result_image, text,
             (r['rois'][i][1],r['rois'][i][0]), font, 0.5, rgb, 2, cv2.LINE_AA)
 
-            #Mask
-            image = apply_mask(f, f_object_name, label, image, mask, color, alpha=0.5)
+            
 
         
 
@@ -221,14 +307,23 @@ def main():
         #     cv2.putText(image, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX,
         #         0.6, color, 2)
 
-
-        #save
     
 
         cv2.imshow("Output", result_image)
         #print(image.shape)
+
+        cv2.imshow("mask_Output", mask_result_image)
+
+        # Storing image as png
+        write_image_name = "image" + str(num) + ".png"
+        cv2.imwrite("/home/ecb/instance_segmentation/Mask_RCNN/result/mask_image_result/"+ write_image_name, mask_result_image)
+
+        #save
         video.write(result_image)
         #cv2.waitKey()
+        
+        mask_video.write(mask_result_image)
+
 
         num = num + 1
 
@@ -241,8 +336,11 @@ def main():
             break
 
 
+
+
     cap.release()
     video.release()
+    mask_video.release()
     cv2.destroyAllWindows()
 
 
