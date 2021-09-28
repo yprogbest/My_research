@@ -497,12 +497,6 @@ int object_tracking() {
 	vector<vector<Point3f>> gather_represent_coordinate_person;
 	vector<vector<Point3f>> gather_represent_coordinate_container;
 
-	vector<vector<Point3f>> gather_represent_coordinate_person_copy;
-	vector<vector<Point3f>> gather_represent_coordinate_container_copy;
-
-	vector<vector<Point3f>> erase_represent_coordinate_person;
-	vector<vector<Point3f>> erase_represent_coordinate_container;
-
 
 
 	//mask画像の色（person→赤，container→青）
@@ -897,16 +891,24 @@ int object_tracking() {
 
 
 
-		//2次元配列のコピー
-		gather_represent_coordinate_person_copy = gather_represent_coordinate_person.clone();
-
 		//vector内の値を消去
-		erase_represent_coordinate_person = erase_points(gather_represent_coordinate_person);
-		erase_represent_coordinate_container = erase_points(gather_represent_coordinate_container);
+		gather_represent_coordinate_person = erase_points(gather_represent_coordinate_person);
+		gather_represent_coordinate_container = erase_points(gather_represent_coordinate_container);
+
+
+		for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
+		{
+			for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
+			{
+				printf("erase_represent_coordinate_person[%d][%d]=%lf\n", i, j, sqrt(gather_represent_coordinate_person[i][j].x*gather_represent_coordinate_person[i][j].x + gather_represent_coordinate_person[i][j].y*gather_represent_coordinate_person[i][j].y + gather_represent_coordinate_person[i][j].z*gather_represent_coordinate_person[i][j].z));
+			}
+		}
+
+
 		
 
 		// plot onto Gnuplot //
-		gnuplot_mapping(gid, erase_represent_coordinate_person, erase_represent_coordinate_container);
+		//gnuplot_mapping(gid, erase_represent_coordinate_person, erase_represent_coordinate_container);
 
 
 
@@ -2463,9 +2465,9 @@ vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec
 	{
 		for (int j = 0; j < max_coordinate_2vec[i].size(); j++)
 		{
-			if (max_coordinate_2vec[i].size() >= 3)
+			if (j > 3)
 			{
-				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin + max_coordinate_2vec[i][j - 2]);
+				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin() + (j - 2));
 			}
 			else
 			{
