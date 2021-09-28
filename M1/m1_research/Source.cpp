@@ -7,6 +7,7 @@
 #include <process.h>
 #include <time.h>
 #include <random>
+#include <vector>
 
 #include <opencv2/opencv.hpp>//OpenCVのインクルード
 #include "opencv2/highgui/highgui.hpp"
@@ -56,6 +57,11 @@ using namespace cv;
 using namespace std;
 
 
+int nCommand;
+int i_yolo_lidar = 0;
+
+
+
 //プロトタイプ宣言
 void menu_screen();
 int yolo_pixcel_count();
@@ -65,15 +71,14 @@ int yolo_box_coordinate();
 int object_tracking();
 int distance_hist(std::vector<cv::Point3f> obj_lidar);
 int max_distance_hist(int hist[]);
+Mat shrinking(Mat input_image, int count);
 Point3f get_median(std::vector<cv::Point3f> obj_lidar); //修正後
 //std::tuple<float, Point3f> get_median(std::vector<cv::Point3f> obj_lidar); //修正前
 std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate);
-int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);//修正後
-//int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //修正前
+vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec);
+int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);//gnuplot 修正後(ver1)
+//int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //gnuplot 修正前
 
-
-int nCommand;
-int i_yolo_lidar = 0;
 
 
 
@@ -413,6 +418,7 @@ int object_tracking() {
 
 	int object_num = 5;
 
+
 	vector<struct point_cloud>point_cloud; //push_backするために用意
 	struct point_cloud point; //LiDARの出力結果(x,y,z,intensity)
 
@@ -491,6 +497,11 @@ int object_tracking() {
 	vector<vector<Point3f>> gather_represent_coordinate_person;
 	vector<vector<Point3f>> gather_represent_coordinate_container;
 
+	vector<vector<Point3f>> gather_represent_coordinate_person_copy;
+	vector<vector<Point3f>> gather_represent_coordinate_container_copy;
+
+	vector<vector<Point3f>> erase_represent_coordinate_person;
+	vector<vector<Point3f>> erase_represent_coordinate_container;
 
 
 
@@ -619,8 +630,11 @@ int object_tracking() {
 		int mask_cols = mask_image.cols;
 
 
-		out_image = mask_image.clone();
+		//out_image = mask_image.clone();
 
+
+		//収縮処理
+		out_image = shrinking(mask_image, 1);
 
 
 
@@ -698,9 +712,9 @@ int object_tracking() {
 
 
 			//認識結果の範囲内のLiDAR点群が存在する画素値
-			b_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
-			g_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
-			r_lidar = mask_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
+			b_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
+			g_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
+			r_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
 
 
 			//person
@@ -853,10 +867,11 @@ int object_tracking() {
 		container_max_coordinate.push_back(max_coordinate_container5);
 
 
-		for (int i = 0; i < person_max_coordinate.size(); i++)
+		/*for (int i = 0; i < person_max_coordinate.size(); i++)
 		{
 			printf("person_max_coordinate[%d] = %lf\n", i, sqrt(person_max_coordinate[i].x*person_max_coordinate[i].x + person_max_coordinate[i].y*person_max_coordinate[i].y + person_max_coordinate[i].z*person_max_coordinate[i].z));
-		}
+		}*/
+
 
 
 		// Storing the LiDAR points information into the 2D vector
@@ -881,8 +896,20 @@ int object_tracking() {
 		// //
 
 
+
+		//2次元配列のコピー
+		gather_represent_coordinate_person_copy = gather_represent_coordinate_person.clone();
+
+		//vector内の値を消去
+		erase_represent_coordinate_person = erase_points(gather_represent_coordinate_person);
+		erase_represent_coordinate_container = erase_points(gather_represent_coordinate_container);
+		
+
 		// plot onto Gnuplot //
-		gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
+		gnuplot_mapping(gid, erase_represent_coordinate_person, erase_represent_coordinate_container);
+
+
+
 
 
 
@@ -1564,440 +1591,437 @@ int object_tracking() {
 
 
 //試作（画像で処理を行う）
-/*
-int object_tracking() {
 
-
-	vector<struct point_cloud>point_cloud; //push_backするために用意
-	struct point_cloud point; //LiDARの出力結果(x,y,z,intensity)
-	
-	std::vector<Point3f> point_cloud_LiDAR_yzx; //LiDAR 座標変換
-	Point3f buf_LiDAR_yzx;
-	
-	vector<Point2f> imagePoints_LiDAR2ZED; //LiDAR 3D → 2D
-	float fraction_x; //点群の小数部分
-	float fraction_y; //点群の小数部分
-	Point imagePoints_LiDAR2ZED_int;//LiDARの点群の整数化
-	vector<Point> all_imagePoints_LiDAR2ZED_int; 
-	vector<Point2f> imagePoints_LiDAR2ZED_in_region_person;
-	vector<Point2f> imagePoints_LiDAR2ZED_in_region_container;
-
-	//mask画像の色（person→赤，container→青）
-	int b, g, r;
-
-	string object_name;
-
-
-
-
-	//yamlファイルの読み込み(rvecとtvecを使う)
-
-	cv::Mat K1, D1;
-	cv::Mat rvec = cv::Mat::zeros(3, 1, CV_64FC1);
-	cv::Mat tvec = cv::Mat::zeros(3, 1, CV_64FC1);
-	cv::Mat mat_R_LiDAR2ZED = cv::Mat::zeros(3, 3, CV_64FC1);
-	cv::Mat mat_T_LiDAR2ZED = cv::Mat::zeros(3, 1, CV_64FC1);
-
-
-	std::string sFilePath_PnP_rvec_tvec = "D:\\OpenCV_C++_practice\\!2_point_cloud_xyz11.txt_solve_PnP_K_D_rvec_tvec.yaml";
-
-	cv::FileStorage fs_rvec_tvec(sFilePath_PnP_rvec_tvec, FileStorage::READ);
-
-
-
-
-	fs_rvec_tvec["K1"] >> K1;
-	fs_rvec_tvec["D1"] >> D1;
-	fs_rvec_tvec["rvec"] >> rvec;
-	fs_rvec_tvec["tvec"] >> tvec;
-	fs_rvec_tvec["mat_T_LiDAR2ZED"] >> mat_T_LiDAR2ZED; //キャリブレーションで求めた並行行列
-	fs_rvec_tvec["mat_R_LiDAR2ZED"] >> mat_R_LiDAR2ZED; //キャリブレーションで求めた回転行列
-
-
-
-	fs_rvec_tvec.release();
-
-	std::cout << endl;
-	std::cout << "PnP parameters" << endl;
-	std::cout << "K1:" << K1 << endl;
-	std::cout << "D1:" << D1 << endl;
-	std::cout << "rvec:" << rvec << endl;
-	std::cout << "tvec:" << tvec << endl;
-	std::cout << "mat_T_LiDAR2ZED:" << mat_T_LiDAR2ZED << endl;
-	std::cout << "mat_R_LiDAR2ZED:" << mat_R_LiDAR2ZED << endl;
-	std::cout << endl;
-	std::cout << endl;
-
-
-
-	//LiDARの点群データのテキストファイルのパスを標準入力するために用意
-	std::cout << "File path : LiDAR Point Cloud Info = " << std::endl;
-	string sFilePath_LiDAR_PointCloud;
-	cin >> sFilePath_LiDAR_PointCloud;
-
-
-
-	//MaskRCNNの画像を入力するためにファイルパスを指定
-	std::cout << "input color images = " << std::endl;
-	std::string in_put_image_file_path;
-	std::cin >> in_put_image_file_path;
-
-
-	//MaskRCNNの画像を入力するためにファイルパスを指定
-	std::cout << "input mask images = " << std::endl;
-	std::string in_put_image_file_path_mask;
-	std::cin >> in_put_image_file_path_mask;
-
-
-	//画像を出力するためにファイルパスを指定
-	std::cout << "Files for storing images = " << std::endl;
-	std::string out_put_image_file_path;
-	std::cin >> out_put_image_file_path;
-
-
-
-
-
-
-	Mat color_image;
-	Mat mask_image;
-	Mat out_image;
-	std::string img_out_name;
-
-	//NNで求めた3次元点群を2次元に変換
-	vector<Point3f> NN_3D;
-	Point3f NN_3D_buf;
-	vector<Point2f> NN_2D;
-
-
-
-	//maskrcnnの認識の最小画素と最大画素を定義
-	Point mask_min, mask_max;
-
-	Point person_xy, container_xy;
-
-
-
-
-	while (1) 
-	{
-	
-		//カラー画像の読み込み
-		std::string color_img_in_name;
-		color_img_in_name = in_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
-		color_image = cv::imread(color_img_in_name);
-
-		int color_rows = color_image.rows;
-		int color_cols = color_image.cols;
-
-
-		//mask画像の読み込み
-		std::string mask_img_in_name;
-		mask_img_in_name = in_put_image_file_path_mask + "/image" + std::to_string(i_yolo_lidar) + ".png";
-		mask_image = cv::imread(mask_img_in_name);
-
-		int mask_rows = mask_image.rows;
-		int mask_cols = mask_image.cols;
-
-
-		out_image = mask_image.clone();
-
-
-		
-
-		//LiDARのテキストファイルを読み込むためのファイルを用意
-		std::string sFilePath_point_cloud_on_image;
-		sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/point_cloud" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
-
-		//ファイルを開く
-		std::ifstream lidar_text_file;
-		lidar_text_file.open(sFilePath_point_cloud_on_image);
-
-		if (!lidar_text_file.is_open())
-		{
-			std::cerr << "Can not open " + sFilePath_point_cloud_on_image << std::endl;
-
-			return -1;
-
-		}
-
-
-
-		//Maskrcnnの認識範囲内の『LiDAR』の点群を取得
-		while (1)
-		{
-
-
-			if (!lidar_text_file.eof())
-			{
-
-
-				//LiDARのファイル内をスキャンしていく（全ての行を読み込む）
-				lidar_text_file >> point.x;
-				lidar_text_file >> point.y;
-				lidar_text_file >> point.z;
-				lidar_text_file >> point.intensity;
-
-
-				point_cloud.push_back(point); //push_back
-
-
-
-
-			} //もし，LiDARのテキストファイルに文字があるなら・・・の終わり
-			else
-			{
-				lidar_text_file.close();
-				break;
-			}
-
-		} //『Maskrcnnの認識範囲内の『LiDAR』の点群を取得』終了(while文)
-
-
-
-		// change the coordinates of xyz -> yzx (LiDAR)
-		for (int k = 0; k < (int)point_cloud.size(); k++)
-		{
-			buf_LiDAR_yzx.x = (float)-point_cloud[k].y;
-			buf_LiDAR_yzx.y = (float)-point_cloud[k].z;
-			buf_LiDAR_yzx.z = (float)point_cloud[k].x;
-
-			point_cloud_LiDAR_yzx.push_back(buf_LiDAR_yzx);
-		}
-		
-		cv::projectPoints(point_cloud_LiDAR_yzx, rvec, tvec, K1, D1, imagePoints_LiDAR2ZED);
-
-
-		//LiDARの点群の整数化
-		for (int k = 0; k < (int)imagePoints_LiDAR2ZED.size(); k++)
-		{
-			fraction_x = imagePoints_LiDAR2ZED[k].x - int(imagePoints_LiDAR2ZED[k].x);
-			fraction_y = imagePoints_LiDAR2ZED[k].y - int(imagePoints_LiDAR2ZED[k].y);
-		
-			//x
-			if (fraction_x < 0.5)
-			{
-				imagePoints_LiDAR2ZED_int.x = (int)imagePoints_LiDAR2ZED[k].x;
-			}
-			else if(fraction_x >= 0.5)
-			{
-				imagePoints_LiDAR2ZED_int.x = (int)imagePoints_LiDAR2ZED[k].x + 1;
-			}
-		
-			//y
-			if (fraction_y < 0.5)
-			{
-				imagePoints_LiDAR2ZED_int.y = (int)imagePoints_LiDAR2ZED[k].y;
-			}
-			else if (fraction_y >= 0.5)
-			{
-				imagePoints_LiDAR2ZED_int.y = (int)imagePoints_LiDAR2ZED[k].y + 1;
-			}
-		
-		
-			all_imagePoints_LiDAR2ZED_int.push_back(imagePoints_LiDAR2ZED_int);
-		
-		}
-
-
-
-		int person_num = 0;
-		int container_num = 0;
-		
-
-
-		for (int a = 206; a > 0; a = a - 50)
-		{
-
-			for (int y = 0; y < mask_rows; y++)
-			{
-
-				int count_person = 0;
-				int count_container = 0;
-
-
-				for (int x = 0; x < mask_cols; x++)
-				{
-
-					b = mask_image.at<cv::Vec3b>(y, x)[0];
-					g = mask_image.at<cv::Vec3b>(y, x)[1];
-					r = mask_image.at<cv::Vec3b>(y, x)[2];
-
-
-
-					//person
-					if (b < 10 && g < 10 && r > a)
-					{
-						person_xy.x = x;
-						person_xy.y = y;
-
-						object_name = "person" + to_string(person_num);
-
-
-						std::cout << object_name << std::endl;
-
-
-
-						count_person++;
-
-						if (count_person == 1)
-						{
-							mask_min.x = person_xy.x;
-							mask_min.y = person_xy.y;
-
-							mask_max.x = person_xy.x;
-							mask_max.y = person_xy.y;
-						}
-
-
-
-						if (count_person > 1)
-						{
-							if (person_xy.x > mask_max.x)
-							{
-								mask_max.x = person_xy.x;
-								mask_max.y = person_xy.y;
-							}
-						}
-
-						std::cout << "x_min= " << mask_min.x << "\t" << "y_min=" << mask_min.y << "\t" << "x_max= " << mask_max.x << "\t" << "y_max=" << mask_max.y << std::endl;
-
-						for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
-						{
-							if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
-							if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
-
-
-
-
-							if (((int)imagePoints_LiDAR2ZED[j].x > mask_min.x && (int)imagePoints_LiDAR2ZED[j].y > mask_min.y - 3) && ((int)imagePoints_LiDAR2ZED[j].x < mask_max.x && (int)imagePoints_LiDAR2ZED[j].y < mask_max.y))
-							{
-								if (mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[0] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[1] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[2] != 0)
-								{
-									//認識範囲内のLiDAR点群をプッシュバック
-									imagePoints_LiDAR2ZED_in_region_person.push_back(imagePoints_LiDAR2ZED[j]);
-									
-									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-								}
-							}
-						}
-
-					}
-					//container
-					else if (b > a && g < 10 && r < 10)
-					{
-						container_xy.x = x;
-						container_xy.y = y;
-
-						object_name = "container" + to_string(container_num);
-
-
-						std::cout << object_name << std::endl;
-
-
-
-						container_num++;
-
-						if (container_num == 1)
-						{
-							mask_min.x = container_xy.x;
-							mask_min.y = container_xy.y;
-
-							mask_max.x = container_xy.x;
-							mask_max.y = container_xy.y;
-						}
-
-
-
-						if (container_num > 1)
-						{
-							if (container_xy.x > mask_max.x)
-							{
-								mask_max.x = container_xy.x;
-								mask_max.y = container_xy.y;
-							}
-						}
-
-						//std::cout << "x_min= " << mask_min.x << "\t" << "y_min=" << mask_min.y << "\t" << "x_max= " << mask_max.x << "\t" << "y_max=" << mask_max.y << std::endl;
-
-						for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
-						{
-							if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
-							if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
-
-
-
-
-							if (((int)imagePoints_LiDAR2ZED[j].x > mask_min.x && (int)imagePoints_LiDAR2ZED[j].y > mask_min.y - 3) && ((int)imagePoints_LiDAR2ZED[j].x < mask_max.x && (int)imagePoints_LiDAR2ZED[j].y < mask_max.y))
-							{
-								if (mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[0] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[1] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[2] != 0)
-								{
-									//認識範囲内のLiDAR点群をプッシュバック
-									imagePoints_LiDAR2ZED_in_region_container.push_back(imagePoints_LiDAR2ZED[j]);
-
-									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
-								}
-							}
-						}
-
-
-					}
-					else if (b == 0 && g == 0 && r == 0)
-					{
-						continue;
-					}
-
-
-
-
-
-					//for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
-					//{
-					//	if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
-					//	if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
-
-
-
-
-					//}
-
-
-				}
-
-			}
-
-
-			if (imagePoints_LiDAR2ZED_in_region_person.size() != 0) person_num++;
-			if (imagePoints_LiDAR2ZED_in_region_container.size() != 0) container_num++;;
-
-			imagePoints_LiDAR2ZED_in_region_person.clear();
-			imagePoints_LiDAR2ZED_in_region_person.shrink_to_fit();
-			imagePoints_LiDAR2ZED_in_region_container.clear();
-			imagePoints_LiDAR2ZED_in_region_container.shrink_to_fit();
-
-		}
-
-	
-
-		//動画の出力
-		img_out_name = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
-		cv::imwrite(img_out_name, out_image);
-
-		std::cout << i_yolo_lidar << std::endl;
-
-
-		i_yolo_lidar++;
-	
-	}
-
-
-
-
-	return 0;
-}
-
-*/
-
+//int object_tracking() 
+//{
+//
+//	vector<struct point_cloud>point_cloud; //push_backするために用意
+//	struct point_cloud point; //LiDARの出力結果(x,y,z,intensity)
+//	
+//	std::vector<Point3f> point_cloud_LiDAR_yzx; //LiDAR 座標変換
+//	Point3f buf_LiDAR_yzx;
+//	
+//	vector<Point2f> imagePoints_LiDAR2ZED; //LiDAR 3D → 2D
+//	float fraction_x; //点群の小数部分
+//	float fraction_y; //点群の小数部分
+//	Point imagePoints_LiDAR2ZED_int;//LiDARの点群の整数化
+//	vector<Point> all_imagePoints_LiDAR2ZED_int; 
+//	vector<Point2f> imagePoints_LiDAR2ZED_in_region_person;
+//	vector<Point2f> imagePoints_LiDAR2ZED_in_region_container;
+//
+//	//mask画像の色（person→赤，container→青）
+//	int b, g, r;
+//
+//	string object_name;
+//
+//
+//
+//
+//	//yamlファイルの読み込み(rvecとtvecを使う)
+//
+//	cv::Mat K1, D1;
+//	cv::Mat rvec = cv::Mat::zeros(3, 1, CV_64FC1);
+//	cv::Mat tvec = cv::Mat::zeros(3, 1, CV_64FC1);
+//	cv::Mat mat_R_LiDAR2ZED = cv::Mat::zeros(3, 3, CV_64FC1);
+//	cv::Mat mat_T_LiDAR2ZED = cv::Mat::zeros(3, 1, CV_64FC1);
+//
+//
+//	std::string sFilePath_PnP_rvec_tvec = "D:\\OpenCV_C++_practice\\!2_point_cloud_xyz11.txt_solve_PnP_K_D_rvec_tvec.yaml";
+//
+//	cv::FileStorage fs_rvec_tvec(sFilePath_PnP_rvec_tvec, FileStorage::READ);
+//
+//
+//
+//
+//	fs_rvec_tvec["K1"] >> K1;
+//	fs_rvec_tvec["D1"] >> D1;
+//	fs_rvec_tvec["rvec"] >> rvec;
+//	fs_rvec_tvec["tvec"] >> tvec;
+//	fs_rvec_tvec["mat_T_LiDAR2ZED"] >> mat_T_LiDAR2ZED; //キャリブレーションで求めた並行行列
+//	fs_rvec_tvec["mat_R_LiDAR2ZED"] >> mat_R_LiDAR2ZED; //キャリブレーションで求めた回転行列
+//
+//
+//
+//	fs_rvec_tvec.release();
+//
+//	std::cout << endl;
+//	std::cout << "PnP parameters" << endl;
+//	std::cout << "K1:" << K1 << endl;
+//	std::cout << "D1:" << D1 << endl;
+//	std::cout << "rvec:" << rvec << endl;
+//	std::cout << "tvec:" << tvec << endl;
+//	std::cout << "mat_T_LiDAR2ZED:" << mat_T_LiDAR2ZED << endl;
+//	std::cout << "mat_R_LiDAR2ZED:" << mat_R_LiDAR2ZED << endl;
+//	std::cout << endl;
+//	std::cout << endl;
+//
+//
+//
+//	//LiDARの点群データのテキストファイルのパスを標準入力するために用意
+//	std::cout << "File path : LiDAR Point Cloud Info = " << std::endl;
+//	string sFilePath_LiDAR_PointCloud;
+//	cin >> sFilePath_LiDAR_PointCloud;
+//
+//
+//
+//	//MaskRCNNの画像を入力するためにファイルパスを指定
+//	std::cout << "input color images = " << std::endl;
+//	std::string in_put_image_file_path;
+//	std::cin >> in_put_image_file_path;
+//
+//
+//	//MaskRCNNの画像を入力するためにファイルパスを指定
+//	std::cout << "input mask images = " << std::endl;
+//	std::string in_put_image_file_path_mask;
+//	std::cin >> in_put_image_file_path_mask;
+//
+//
+//	//画像を出力するためにファイルパスを指定
+//	std::cout << "Files for storing images = " << std::endl;
+//	std::string out_put_image_file_path;
+//	std::cin >> out_put_image_file_path;
+//
+//
+//
+//
+//
+//
+//	Mat color_image;
+//	Mat mask_image;
+//	Mat out_image;
+//	std::string img_out_name;
+//
+//	//NNで求めた3次元点群を2次元に変換
+//	vector<Point3f> NN_3D;
+//	Point3f NN_3D_buf;
+//	vector<Point2f> NN_2D;
+//
+//
+//
+//	//maskrcnnの認識の最小画素と最大画素を定義
+//	Point mask_min, mask_max;
+//
+//	Point person_xy, container_xy;
+//
+//
+//
+//
+//	while (1) 
+//	{
+//	
+//		//カラー画像の読み込み
+//		std::string color_img_in_name;
+//		color_img_in_name = in_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
+//		color_image = cv::imread(color_img_in_name);
+//
+//		int color_rows = color_image.rows;
+//		int color_cols = color_image.cols;
+//
+//
+//		//mask画像の読み込み
+//		std::string mask_img_in_name;
+//		mask_img_in_name = in_put_image_file_path_mask + "/image" + std::to_string(i_yolo_lidar) + ".png";
+//		mask_image = cv::imread(mask_img_in_name);
+//
+//		int mask_rows = mask_image.rows;
+//		int mask_cols = mask_image.cols;
+//
+//
+//		out_image = mask_image.clone();
+//
+//
+//		
+//
+//		//LiDARのテキストファイルを読み込むためのファイルを用意
+//		std::string sFilePath_point_cloud_on_image;
+//		sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/point_cloud" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
+//
+//		//ファイルを開く
+//		std::ifstream lidar_text_file;
+//		lidar_text_file.open(sFilePath_point_cloud_on_image);
+//
+//		if (!lidar_text_file.is_open())
+//		{
+//			std::cerr << "Can not open " + sFilePath_point_cloud_on_image << std::endl;
+//
+//			return -1;
+//
+//		}
+//
+//
+//
+//		//Maskrcnnの認識範囲内の『LiDAR』の点群を取得
+//		while (1)
+//		{
+//
+//
+//			if (!lidar_text_file.eof())
+//			{
+//
+//
+//				//LiDARのファイル内をスキャンしていく（全ての行を読み込む）
+//				lidar_text_file >> point.x;
+//				lidar_text_file >> point.y;
+//				lidar_text_file >> point.z;
+//				lidar_text_file >> point.intensity;
+//
+//
+//				point_cloud.push_back(point); //push_back
+//
+//
+//
+//
+//			} //もし，LiDARのテキストファイルに文字があるなら・・・の終わり
+//			else
+//			{
+//				lidar_text_file.close();
+//				break;
+//			}
+//
+//		} //『Maskrcnnの認識範囲内の『LiDAR』の点群を取得』終了(while文)
+//
+//
+//
+//		// change the coordinates of xyz -> yzx (LiDAR)
+//		for (int k = 0; k < (int)point_cloud.size(); k++)
+//		{
+//			buf_LiDAR_yzx.x = (float)-point_cloud[k].y;
+//			buf_LiDAR_yzx.y = (float)-point_cloud[k].z;
+//			buf_LiDAR_yzx.z = (float)point_cloud[k].x;
+//
+//			point_cloud_LiDAR_yzx.push_back(buf_LiDAR_yzx);
+//		}
+//		
+//		cv::projectPoints(point_cloud_LiDAR_yzx, rvec, tvec, K1, D1, imagePoints_LiDAR2ZED);
+//
+//
+//		//LiDARの点群の整数化
+//		for (int k = 0; k < (int)imagePoints_LiDAR2ZED.size(); k++)
+//		{
+//			fraction_x = imagePoints_LiDAR2ZED[k].x - int(imagePoints_LiDAR2ZED[k].x);
+//			fraction_y = imagePoints_LiDAR2ZED[k].y - int(imagePoints_LiDAR2ZED[k].y);
+//		
+//			//x
+//			if (fraction_x < 0.5)
+//			{
+//				imagePoints_LiDAR2ZED_int.x = (int)imagePoints_LiDAR2ZED[k].x;
+//			}
+//			else if(fraction_x >= 0.5)
+//			{
+//				imagePoints_LiDAR2ZED_int.x = (int)imagePoints_LiDAR2ZED[k].x + 1;
+//			}
+//		
+//			//y
+//			if (fraction_y < 0.5)
+//			{
+//				imagePoints_LiDAR2ZED_int.y = (int)imagePoints_LiDAR2ZED[k].y;
+//			}
+//			else if (fraction_y >= 0.5)
+//			{
+//				imagePoints_LiDAR2ZED_int.y = (int)imagePoints_LiDAR2ZED[k].y + 1;
+//			}
+//		
+//		
+//			all_imagePoints_LiDAR2ZED_int.push_back(imagePoints_LiDAR2ZED_int);
+//		
+//		}
+//
+//
+//
+//		int person_num = 0;
+//		int container_num = 0;
+//		
+//
+//
+//		for (int a = 206; a > 0; a = a - 50)
+//		{
+//
+//			for (int y = 0; y < mask_rows; y++)
+//			{
+//
+//				int count_person = 0;
+//				int count_container = 0;
+//
+//
+//				for (int x = 0; x < mask_cols; x++)
+//				{
+//
+//					b = mask_image.at<cv::Vec3b>(y, x)[0];
+//					g = mask_image.at<cv::Vec3b>(y, x)[1];
+//					r = mask_image.at<cv::Vec3b>(y, x)[2];
+//
+//
+//
+//					//person
+//					if (b < 10 && g < 10 && r > a)
+//					{
+//						person_xy.x = x;
+//						person_xy.y = y;
+//
+//						object_name = "person" + to_string(person_num);
+//
+//
+//						std::cout << object_name << std::endl;
+//
+//
+//
+//						count_person++;
+//
+//						if (count_person == 1)
+//						{
+//							mask_min.x = person_xy.x;
+//							mask_min.y = person_xy.y;
+//
+//							mask_max.x = person_xy.x;
+//							mask_max.y = person_xy.y;
+//						}
+//
+//
+//
+//						if (count_person > 1)
+//						{
+//							if (person_xy.x > mask_max.x)
+//							{
+//								mask_max.x = person_xy.x;
+//								mask_max.y = person_xy.y;
+//							}
+//						}
+//
+//						std::cout << "x_min= " << mask_min.x << "\t" << "y_min=" << mask_min.y << "\t" << "x_max= " << mask_max.x << "\t" << "y_max=" << mask_max.y << std::endl;
+//
+//						for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
+//						{
+//							if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
+//							if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
+//
+//
+//
+//
+//							if (((int)imagePoints_LiDAR2ZED[j].x > mask_min.x && (int)imagePoints_LiDAR2ZED[j].y > mask_min.y - 3) && ((int)imagePoints_LiDAR2ZED[j].x < mask_max.x && (int)imagePoints_LiDAR2ZED[j].y < mask_max.y))
+//							{
+//								if (mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[0] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[1] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[2] != 0)
+//								{
+//									//認識範囲内のLiDAR点群をプッシュバック
+//									imagePoints_LiDAR2ZED_in_region_person.push_back(imagePoints_LiDAR2ZED[j]);
+//									
+//									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//								}
+//							}
+//						}
+//
+//					}
+//					//container
+//					else if (b > a && g < 10 && r < 10)
+//					{
+//						container_xy.x = x;
+//						container_xy.y = y;
+//
+//						object_name = "container" + to_string(container_num);
+//
+//
+//						std::cout << object_name << std::endl;
+//
+//
+//
+//						container_num++;
+//
+//						if (container_num == 1)
+//						{
+//							mask_min.x = container_xy.x;
+//							mask_min.y = container_xy.y;
+//
+//							mask_max.x = container_xy.x;
+//							mask_max.y = container_xy.y;
+//						}
+//
+//
+//
+//						if (container_num > 1)
+//						{
+//							if (container_xy.x > mask_max.x)
+//							{
+//								mask_max.x = container_xy.x;
+//								mask_max.y = container_xy.y;
+//							}
+//						}
+//
+//						//std::cout << "x_min= " << mask_min.x << "\t" << "y_min=" << mask_min.y << "\t" << "x_max= " << mask_max.x << "\t" << "y_max=" << mask_max.y << std::endl;
+//
+//						for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
+//						{
+//							if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
+//							if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
+//
+//
+//
+//
+//							if (((int)imagePoints_LiDAR2ZED[j].x > mask_min.x && (int)imagePoints_LiDAR2ZED[j].y > mask_min.y - 3) && ((int)imagePoints_LiDAR2ZED[j].x < mask_max.x && (int)imagePoints_LiDAR2ZED[j].y < mask_max.y))
+//							{
+//								if (mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[0] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[1] != 0 && mask_image.at<cv::Vec3b>((int)imagePoints_LiDAR2ZED[j].y, (int)imagePoints_LiDAR2ZED[j].x)[2] != 0)
+//								{
+//									//認識範囲内のLiDAR点群をプッシュバック
+//									imagePoints_LiDAR2ZED_in_region_container.push_back(imagePoints_LiDAR2ZED[j]);
+//
+//									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//								}
+//							}
+//						}
+//
+//
+//					}
+//					else if (b == 0 && g == 0 && r == 0)
+//					{
+//						continue;
+//					}
+//
+//
+//
+//
+//
+//					//for (int j = 0; j < (int)imagePoints_LiDAR2ZED.size(); j++)
+//					//{
+//					//	if (point_cloud_LiDAR_yzx[j].z < 0) continue; //
+//					//	if (imagePoints_LiDAR2ZED[j].x < 0 || imagePoints_LiDAR2ZED[j].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[j].y < 0 || imagePoints_LiDAR2ZED[j].y >= IMG_YSIZE) continue;
+//
+//
+//
+//
+//					//}
+//
+//
+//				}
+//
+//			}
+//
+//
+//			if (imagePoints_LiDAR2ZED_in_region_person.size() != 0) person_num++;
+//			if (imagePoints_LiDAR2ZED_in_region_container.size() != 0) container_num++;;
+//
+//			imagePoints_LiDAR2ZED_in_region_person.clear();
+//			imagePoints_LiDAR2ZED_in_region_person.shrink_to_fit();
+//			imagePoints_LiDAR2ZED_in_region_container.clear();
+//			imagePoints_LiDAR2ZED_in_region_container.shrink_to_fit();
+//
+//		}
+//
+//	
+//
+//		//動画の出力
+//		img_out_name = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
+//		cv::imwrite(img_out_name, out_image);
+//
+//		std::cout << i_yolo_lidar << std::endl;
+//
+//
+//		i_yolo_lidar++;
+//	
+//	}
+//
+//
+//
+//
+//	return 0;
+//}
 
 
 
@@ -2242,6 +2266,71 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 
 
 
+// 画像　収縮処理（整数化したLiDAR点群をマッピングする際に，背景の点群を排除するため）
+Mat shrinking(Mat input_image, int count)
+{
+	int input_rows = input_image.rows;
+	int input_cols = input_image.cols;
+
+	Mat output_image;
+	output_image = input_image.clone();
+
+	int output_rows = input_image.rows;
+	int output_cols = input_image.cols;
+
+	int b1, b2, b3, b4;
+	int g1, g2, g3, g4;
+	int r1, r2, r3, r4;
+
+
+
+	for (int k = 0; k < count; k++)
+	{
+		for (int j = 1; j < input_rows - 1; j++)
+		{
+			for (int i = 1; i < input_cols - 1; i++)
+			{
+				//上
+				b1 = input_image.at<cv::Vec3b>(j - 1, i)[0];
+				g1 = input_image.at<cv::Vec3b>(j - 1, i)[1];
+				r1 = input_image.at<cv::Vec3b>(j - 1, i)[2];
+
+				//右
+				b2 = input_image.at<cv::Vec3b>(j, i + 1)[0];
+				g2 = input_image.at<cv::Vec3b>(j, i + 1)[1];
+				r2 = input_image.at<cv::Vec3b>(j, i + 1)[2];
+
+				//下
+				b3 = input_image.at<cv::Vec3b>(j + 1, i)[0];
+				g3 = input_image.at<cv::Vec3b>(j + 1, i)[1];
+				r3 = input_image.at<cv::Vec3b>(j + 1, i)[2];
+
+				//左
+				b4 = input_image.at<cv::Vec3b>(j, i - 1)[0];
+				g4 = input_image.at<cv::Vec3b>(j, i - 1)[1];
+				r4 = input_image.at<cv::Vec3b>(j, i - 1)[2];
+
+				if ((b1 == 0 && g1 == 0 && r1 == 0) || (b2 == 0 && g2 == 0 && r2 == 0) || (b3 == 0 && g3 == 0 && r3 == 0) || (b4 == 0 && g4 == 0 && r4 == 0))
+				{
+					output_image.at<cv::Vec3b>(j, i)[0] = 0;
+					output_image.at<cv::Vec3b>(j, i)[1] = 0;
+					output_image.at<cv::Vec3b>(j, i)[2] = 0;
+				}
+			}
+		}
+
+		input_image = output_image;
+
+	}
+	
+
+
+	return output_image;
+}
+
+
+
+
 // Gathering the representive LiDAR points of each object
 std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_point(vector<Point3f> max_coordinate_vec)
 {
@@ -2364,7 +2453,36 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 
 
 
-// Gnuplotに代表点をプロットする（修正後）
+
+//2次元vectorの値を消去する
+vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec)
+{
+
+
+	for (int i = 0; i < max_coordinate_2vec.size(); i++)
+	{
+		for (int j = 0; j < max_coordinate_2vec[i].size(); j++)
+		{
+			if (max_coordinate_2vec[i].size() >= 3)
+			{
+				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin + max_coordinate_2vec[i][j - 2]);
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+
+	return max_coordinate_2vec;
+}
+
+
+
+
+
+// Gnuplotに代表点をプロットする（修正後 ver1）
+
 int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2)
 {
 	fprintf(gid, "unset multiplot\n");
@@ -2427,11 +2545,9 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "pause 0.5\n");
 	fflush(gid);
 
+
 	return 0;
 }
-
-
-
 
 
 
