@@ -900,7 +900,7 @@ int object_tracking() {
 		{
 			for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
 			{
-				printf("erase_represent_coordinate_person[%d][%d]=%lf\n", i, j, sqrt(gather_represent_coordinate_person[i][j].x*gather_represent_coordinate_person[i][j].x + gather_represent_coordinate_person[i][j].y*gather_represent_coordinate_person[i][j].y + gather_represent_coordinate_person[i][j].z*gather_represent_coordinate_person[i][j].z));
+				printf("gather_represent_coordinate_person[%d][%d]=%lf\n", i, j, sqrt(gather_represent_coordinate_person[i][j].x*gather_represent_coordinate_person[i][j].x + gather_represent_coordinate_person[i][j].y*gather_represent_coordinate_person[i][j].y + gather_represent_coordinate_person[i][j].z*gather_represent_coordinate_person[i][j].z));
 			}
 		}
 
@@ -908,7 +908,7 @@ int object_tracking() {
 		
 
 		// plot onto Gnuplot //
-		//gnuplot_mapping(gid, erase_represent_coordinate_person, erase_represent_coordinate_container);
+		//gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
 
 
 
@@ -2097,14 +2097,12 @@ int max_distance_hist(int hist[])
 }
 
 
-//代表点の算出手法2(Median)←修正後（x,y,zのmedian値から距離distanceを算出する方法に変更）
+
+
+//代表点の算出手法2(Median)←修正後ver2（x,y,zそれぞれのmedian値を求める）
 Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 {
-	float distance;
-	std::vector<float> distance_vec;
-
 	//昇順に並び替える際に使う
-	float tmp_distance;
 	float tmp_x;
 	float tmp_y;
 	float tmp_z;
@@ -2112,37 +2110,29 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 	Point3f median_lidar_point;
 
 
-	// find a distance from the sensor to the object
+	//Sort in descending order 
 	for (int i = 0; i < obj_lidar.size(); i++)
 	{
-		distance = obj_lidar[i].x * obj_lidar[i].x + obj_lidar[i].y * obj_lidar[i].y + obj_lidar[i].z * obj_lidar[i].z;
-		distance = sqrt(distance);
-
-		distance_vec.push_back(distance);
-	}
-
-	//Sort in descending order
-	for (int i = 0; i < distance_vec.size(); i++)
-	{
-		for (int h = i + 1; h < distance_vec.size(); h++)
+		for (int h = i + 1; h < obj_lidar.size(); h++)
 		{
-			if (distance_vec[i] < distance_vec[h])
+			if (obj_lidar[i].x < obj_lidar[h].x)
 			{
-				// distance
-				tmp_distance = distance_vec[h];
-				distance_vec[h] = distance_vec[i];
-				distance_vec[i] = tmp_distance;
-
 				// x
 				tmp_x = obj_lidar[h].x;
 				obj_lidar[h].x = obj_lidar[i].x;
 				obj_lidar[i].x = tmp_x;
+			}
 
+			if (obj_lidar[i].y < obj_lidar[h].y)
+			{
 				// y
 				tmp_y = obj_lidar[h].y;
 				obj_lidar[h].y = obj_lidar[i].y;
 				obj_lidar[i].y = tmp_y;
+			}
 
+			if (obj_lidar[i].z < obj_lidar[h].z)
+			{
 				// z
 				tmp_z = obj_lidar[h].z;
 				obj_lidar[h].z = obj_lidar[i].z;
@@ -2151,21 +2141,22 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 		}
 	}
 
+	
 
 	// find median value
-	if (distance_vec.size() == 0)
+	if (obj_lidar.size() == 0)
 	{
-		median_lidar_point.x = 0.0;
+		/*median_lidar_point.x = 0.0;
 		median_lidar_point.y = 0.0;
-		median_lidar_point.z = 0.0;
+		median_lidar_point.z = 0.0;*/
 	}
-	else if (distance_vec.size() % 2 == 1)
+	else if (obj_lidar.size() % 2 == 1)
 	{
 		median_lidar_point.x = obj_lidar[(int)((int)obj_lidar.size() / 2)].x;
 		median_lidar_point.y = obj_lidar[(int)((int)obj_lidar.size() / 2)].y;
 		median_lidar_point.z = obj_lidar[(int)((int)obj_lidar.size() / 2)].z;
 	}
-	else if (distance_vec.size() % 2 == 0)
+	else if (obj_lidar.size() % 2 == 0)
 	{
 		median_lidar_point.x = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
 		median_lidar_point.y = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
@@ -2177,6 +2168,92 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 
 	return median_lidar_point;
 }
+
+
+
+
+//代表点の算出手法2(Median)←修正後ver1（x,y,zのmedian値から距離distanceを算出する方法に変更）
+
+//Point3f get_median(std::vector<cv::Point3f> obj_lidar)
+//{
+//	float distance;
+//	std::vector<float> distance_vec;
+//
+//	//昇順に並び替える際に使う
+//	float tmp_distance;
+//	float tmp_x;
+//	float tmp_y;
+//	float tmp_z;
+//
+//	Point3f median_lidar_point;
+//
+//
+//	// find a distance from the sensor to the object
+//	for (int i = 0; i < obj_lidar.size(); i++)
+//	{
+//		distance = obj_lidar[i].x * obj_lidar[i].x + obj_lidar[i].y * obj_lidar[i].y + obj_lidar[i].z * obj_lidar[i].z;
+//		distance = sqrt(distance);
+//
+//		distance_vec.push_back(distance);
+//	}
+//
+//	//Sort in descending order
+//	for (int i = 0; i < distance_vec.size(); i++)
+//	{
+//		for (int h = i + 1; h < distance_vec.size(); h++)
+//		{
+//			if (distance_vec[i] < distance_vec[h])
+//			{
+//				// distance
+//				tmp_distance = distance_vec[h];
+//				distance_vec[h] = distance_vec[i];
+//				distance_vec[i] = tmp_distance;
+//
+//				// x
+//				tmp_x = obj_lidar[h].x;
+//				obj_lidar[h].x = obj_lidar[i].x;
+//				obj_lidar[i].x = tmp_x;
+//
+//				// y
+//				tmp_y = obj_lidar[h].y;
+//				obj_lidar[h].y = obj_lidar[i].y;
+//				obj_lidar[i].y = tmp_y;
+//
+//				// z
+//				tmp_z = obj_lidar[h].z;
+//				obj_lidar[h].z = obj_lidar[i].z;
+//				obj_lidar[i].z = tmp_z;
+//			}
+//		}
+//	}
+//
+//
+//	// find median value
+//	if (distance_vec.size() == 0)
+//	{
+//		median_lidar_point.x = 0.0;
+//		median_lidar_point.y = 0.0;
+//		median_lidar_point.z = 0.0;
+//	}
+//	else if (distance_vec.size() % 2 == 1)
+//	{
+//		median_lidar_point.x = obj_lidar[(int)((int)obj_lidar.size() / 2)].x;
+//		median_lidar_point.y = obj_lidar[(int)((int)obj_lidar.size() / 2)].y;
+//		median_lidar_point.z = obj_lidar[(int)((int)obj_lidar.size() / 2)].z;
+//	}
+//	else if (distance_vec.size() % 2 == 0)
+//	{
+//		median_lidar_point.x = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].x + obj_lidar[(int)((int)obj_lidar.size() / 2)].x) / 2.0;
+//		median_lidar_point.y = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].y + obj_lidar[(int)((int)obj_lidar.size() / 2)].y) / 2.0;
+//		median_lidar_point.z = (float)(obj_lidar[(int)((int)obj_lidar.size() / 2) - 1].z + obj_lidar[(int)((int)obj_lidar.size() / 2)].z) / 2.0;
+//	}
+//
+//
+//
+//
+//	return median_lidar_point;
+//}
+
 
 
 
@@ -2456,22 +2533,19 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 
 
 
+
 //2次元vectorの値を消去する
 vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec)
 {
-
 
 	for (int i = 0; i < max_coordinate_2vec.size(); i++)
 	{
 		for (int j = 0; j < max_coordinate_2vec[i].size(); j++)
 		{
-			if (j > 3)
+			if (j >= 2)
 			{
-				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin() + (j - 2));
-			}
-			else
-			{
-				continue;
+				// erase(参考サイト)https://cpprefjp.github.io/reference/vector/vector/erase.html
+				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].begin() + (j - 1));
 			}
 		}
 	}
@@ -2496,7 +2570,6 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "set xr [-30:10]\n");
 	fprintf(gid, "set yr [0:40]\n");
 
-	fprintf(gid, "set key left outside\n");
 	fflush(gid);
 
 
@@ -2504,6 +2577,8 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "set rmargin screen 0.8\n");
 	fprintf(gid, "set tmargin screen 0.8\n");
 	fprintf(gid, "set bmargin screen 0.2\n");
+	fprintf(gid, "set key left outside\n");
+
 
 	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Person' lc 'blue'\n");
 
