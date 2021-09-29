@@ -489,6 +489,12 @@ int object_tracking() {
 	vector<Point3f> person_max_coordinate;
 	vector<Point3f> container_max_coordinate;
 
+	vector<Point3f> person_max_coordinate_copy;
+	vector<Point3f> container_max_coordinate_copy;
+
+	vector<Point2f> person_max_coordinate_image;
+	vector<Point2f> container_max_coordinate_image;
+
 
 	//代表点を集める用に配列を用意
 	vector<vector<float>> gather_represent_distance_person;
@@ -852,6 +858,8 @@ int object_tracking() {
 
 
 
+
+
 		//テキストファイルに認識範囲のLiDARの点群結果を出力していく
 
 		lidar_points_on_detected_area << "Person1" << "\t" << person_lidar1.size() << "\n";
@@ -948,6 +956,38 @@ int object_tracking() {
 		container_max_coordinate.push_back(max_coordinate_container3);
 		container_max_coordinate.push_back(max_coordinate_container4);
 		container_max_coordinate.push_back(max_coordinate_container5);
+
+		//vevtorのコピー(画像にmedianの結果を描写するために用意)
+		person_max_coordinate_copy.push_back(max_coordinate_person1);
+		person_max_coordinate_copy.push_back(max_coordinate_person2);
+		container_max_coordinate_copy.push_back(max_coordinate_container1);
+		container_max_coordinate_copy.push_back(max_coordinate_container2);
+		container_max_coordinate_copy.push_back(max_coordinate_container3);
+		container_max_coordinate_copy.push_back(max_coordinate_container4);
+		container_max_coordinate_copy.push_back(max_coordinate_container5);
+
+
+
+		//中央値の結果を画像に描写
+		cv::projectPoints(person_max_coordinate_copy, rvec, tvec, K1, D1, person_max_coordinate_image);
+		cv::projectPoints(container_max_coordinate_copy, rvec, tvec, K1, D1, container_max_coordinate_image);
+
+		for (int k = 0; k < person_max_coordinate_image.size(); k++)
+		{
+			//person
+			cv::circle(out_image_color, cv::Point((int)person_max_coordinate_image[k].x, (int)person_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
+			cv::circle(out_image_mask, cv::Point((int)person_max_coordinate_image[k].x, (int)person_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
+		}
+
+
+		for (int k = 0; k < container_max_coordinate_image.size(); k++)
+		{
+			//container
+			cv::circle(out_image_color, cv::Point((int)container_max_coordinate_image[k].x, (int)container_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
+			cv::circle(out_image_mask, cv::Point((int)container_max_coordinate_image[k].x, (int)container_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
+		}
+
+
 
 
 		/*for (int i = 0; i < person_max_coordinate.size(); i++)
@@ -1058,6 +1098,17 @@ int object_tracking() {
 
 		imagePoints_LiDAR2ZED.clear();
 		imagePoints_LiDAR2ZED.shrink_to_fit();
+
+
+		person_max_coordinate_copy.clear();
+		person_max_coordinate_copy.shrink_to_fit();
+		container_max_coordinate_copy.clear();
+		container_max_coordinate_copy.shrink_to_fit();
+
+		person_max_coordinate_image.clear();
+		person_max_coordinate_image.shrink_to_fit();
+		container_max_coordinate_image.clear();
+		container_max_coordinate_image.shrink_to_fit();
 
 
 
@@ -2247,9 +2298,9 @@ Point3f get_median(std::vector<cv::Point3f> obj_lidar)
 	// find median value
 	if (obj_lidar.size() == 0)
 	{
-		/*median_lidar_point.x = 0.0;
+		median_lidar_point.x = 0.0;
 		median_lidar_point.y = 0.0;
-		median_lidar_point.z = 0.0;*/
+		median_lidar_point.z = 0.0;
 	}
 	else if (obj_lidar.size() % 2 == 1)
 	{
