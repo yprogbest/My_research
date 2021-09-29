@@ -571,8 +571,10 @@ int object_tracking() {
 
 	Mat color_image;
 	Mat mask_image;
-	Mat out_image;
-	std::string img_out_name;
+	Mat out_image_color;
+	Mat out_image_mask;
+	std::string img_out_name_color;
+	std::string img_out_name_mask;
 
 	//NNで求めた3次元点群を2次元に変換
 	vector<Point3f> NN_3D;
@@ -596,7 +598,8 @@ int object_tracking() {
 	int h = (int)frame_color.get(cv::CAP_PROP_FRAME_HEIGHT);
 
 
-	cv::VideoWriter out_frame(out_put_image_file_path + "/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
+	cv::VideoWriter out_frame_color(out_put_image_file_path + "/output_movie_color/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
+	cv::VideoWriter out_frame_mask(out_put_image_file_path + "/output_movie_mask/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
 
 
 	//gnuplot
@@ -632,11 +635,14 @@ int object_tracking() {
 		int mask_cols = mask_image.cols;
 
 
-		//out_image = mask_image.clone();
+		//out_image_mask = mask_image.clone();
+
+
+		out_image_color = color_image.clone();
 
 
 		//収縮処理
-		out_image = shrinking(mask_image, 1);
+		out_image_mask = shrinking(mask_image, 1);
 
 
 
@@ -714,9 +720,9 @@ int object_tracking() {
 
 
 			//認識結果の範囲内のLiDAR点群が存在する画素値
-			b_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
-			g_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
-			r_lidar = out_image.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
+			b_lidar = out_image_mask.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[0];
+			g_lidar = out_image_mask.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[1];
+			r_lidar = out_image_mask.at<cv::Vec3b>(imagePoints_LiDAR2ZED[k].y, imagePoints_LiDAR2ZED[k].x)[2];
 
 
 			//person
@@ -724,32 +730,37 @@ int object_tracking() {
 			if (b_lidar == 0 && g_lidar == 0 && r_lidar == object_color1)
 			{
 				person_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			//2人目
 			else if (b_lidar == 0 && g_lidar == 0 && r_lidar == object_color2)
 			{
 				person_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			/*else if (b_lidar == 0 && g_lidar == 0 && r_lidar == object_color3)
 			{
 			person_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
-			cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			else if (b_lidar == 0 && g_lidar == 0 && r_lidar == object_color4)
 			{
 			person_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
-			cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			else if (b_lidar == 0 && g_lidar == 0 && r_lidar == object_color5)
 			{
 			person_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
-			cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+			cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}*/
 
@@ -759,35 +770,40 @@ int object_tracking() {
 			if (b_lidar == object_color1 && g_lidar == 0 && r_lidar == 0)
 			{
 				container_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			//2つ目
 			else if (b_lidar == object_color2 && g_lidar == 0 && r_lidar == 0)
 			{
 				container_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			//3つ目
 			else if (b_lidar == object_color3 && g_lidar == 0 && r_lidar == 0)
 			{
 				container_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			//4つ目
 			else if (b_lidar == object_color4 && g_lidar == 0 && r_lidar == 0)
 			{
 				container_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 
 			}
 			//5つ目
 			else if (b_lidar == object_color5 && g_lidar == 0 && r_lidar == 0)
 			{
 				container_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
-				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_color, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 			}
 
 		}
@@ -986,15 +1002,19 @@ int object_tracking() {
 
 
 
-
-
 		//画像の出力
-		img_out_name = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
-		cv::imwrite(img_out_name, out_image);
+		//color
+		img_out_name_color = out_put_image_file_path + "/output_movie_color/image" + std::to_string(i_yolo_lidar) + ".png";
+		cv::imwrite(img_out_name_color, out_image_color);
+
+		//mask
+		img_out_name_mask = out_put_image_file_path + "/output_movie_mask/image" + std::to_string(i_yolo_lidar) + ".png";
+		cv::imwrite(img_out_name_mask, out_image_mask);
 
 
 		//動画の出力
-		out_frame << out_image;
+		out_frame_color << out_image_color;
+		out_frame_mask << out_image_mask;
 
 
 
@@ -1081,7 +1101,8 @@ int object_tracking() {
 
 
 	frame_color.release();
-	out_frame.release();
+	out_frame_color.release();
+	out_frame_mask.release();
 	cv::destroyAllWindows();
 
 
@@ -1258,8 +1279,8 @@ int object_tracking() {
 //
 //	Mat color_image;
 //	Mat mask_image;
-//	Mat out_image;
-//	std::string img_out_name;
+//	Mat out_image_mask;
+//	std::string img_out_name_mask;
 //
 //	//NNで求めた3次元点群を2次元に変換
 //	vector<Point3f> NN_3D;
@@ -1286,7 +1307,7 @@ int object_tracking() {
 //	frame_mask.open(in_put_image_file_path_mask);
 //
 //
-//	cv::VideoWriter out_frame(out_put_image_file_path+"/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
+//	cv::VideoWriter out_frame_mask(out_put_image_file_path+"/output_movie.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, Size(w, h));
 //
 //
 //	//gnuplot
@@ -1311,7 +1332,7 @@ int object_tracking() {
 //		int mask_cols = mask_image.cols;
 //
 //
-//		out_image = mask_image.clone();
+//		out_image_mask = mask_image.clone();
 //
 //
 //
@@ -1400,32 +1421,32 @@ int object_tracking() {
 //			if (b_lidar < 10 && g_lidar < 10 && (object_color2 < r_lidar &&r_lidar <= object_color1))
 //			{
 //				person_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			//2人目
 //			else if (b_lidar < 10 && g_lidar < 10 && (object_color3 < r_lidar &&r_lidar <= object_color2))
 //			{
 //				person_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //				
 //			}
 //			/*else if (b_lidar < 5 && g_lidar < 5 && (object_color4 < r_lidar &&r_lidar <= object_color3))
 //			{
 //				person_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			else if (b_lidar < 5 && g_lidar < 5 && (object_color5 < r_lidar &&r_lidar <= object_color4))
 //			{
 //				person_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			else if (b_lidar < 5 && g_lidar < 5 && (object_color6 < r_lidar &&r_lidar <= object_color5))
 //			{
 //				person_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}*/
 //
@@ -1435,35 +1456,35 @@ int object_tracking() {
 //			if ((object_color2 < b_lidar &&b_lidar <= object_color1) && g_lidar < 10 && r_lidar < 10)
 //			{
 //				container_lidar1.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			//2つ目
 //			else if ((object_color3 < b_lidar &&b_lidar <= object_color2) && g_lidar < 10 && r_lidar < 10)
 //			{
 //				container_lidar2.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			//3つ目
 //			else if ((object_color4 < b_lidar &&b_lidar <= object_color3) && g_lidar < 10 && r_lidar < 10)
 //			{
 //				container_lidar3.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			//4つ目
 //			else if ((object_color5 < b_lidar &&b_lidar <= object_color4) && g_lidar < 10 && r_lidar < 10)
 //			{
 //				container_lidar4.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //
 //			}
 //			//5つ目
 //			else if ((object_color6 < b_lidar &&b_lidar <= object_color5) && g_lidar < 10 && r_lidar < 10)
 //			{
 //				container_lidar5.push_back(point_cloud_LiDAR_yzx[k]);
-//				cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//				cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[k].x, (int)imagePoints_LiDAR2ZED[k].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //			}
 //
 //		}
@@ -1578,12 +1599,12 @@ int object_tracking() {
 //
 //
 //		//画像の出力
-//		img_out_name = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
-//		cv::imwrite(img_out_name, out_image);
+//		img_out_name_mask = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
+//		cv::imwrite(img_out_name_mask, out_image_mask);
 //
 //
 //		//動画の出力
-//		out_frame << out_image;
+//		out_frame_mask << out_image_mask;
 //
 //
 //
@@ -1663,7 +1684,7 @@ int object_tracking() {
 //
 //	frame_color.release();
 //	frame_mask.release();
-//	out_frame.release();
+//	out_frame_mask.release();
 //	cv::destroyAllWindows();
 //
 //
@@ -1770,8 +1791,8 @@ int object_tracking() {
 //
 //	Mat color_image;
 //	Mat mask_image;
-//	Mat out_image;
-//	std::string img_out_name;
+//	Mat out_image_mask;
+//	std::string img_out_name_mask;
 //
 //	//NNで求めた3次元点群を2次元に変換
 //	vector<Point3f> NN_3D;
@@ -1809,7 +1830,7 @@ int object_tracking() {
 //		int mask_cols = mask_image.cols;
 //
 //
-//		out_image = mask_image.clone();
+//		out_image_mask = mask_image.clone();
 //
 //
 //		
@@ -1986,7 +2007,7 @@ int object_tracking() {
 //									//認識範囲内のLiDAR点群をプッシュバック
 //									imagePoints_LiDAR2ZED_in_region_person.push_back(imagePoints_LiDAR2ZED[j]);
 //									
-//									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//									cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //								}
 //							}
 //						}
@@ -2044,7 +2065,7 @@ int object_tracking() {
 //									//認識範囲内のLiDAR点群をプッシュバック
 //									imagePoints_LiDAR2ZED_in_region_container.push_back(imagePoints_LiDAR2ZED[j]);
 //
-//									cv::circle(out_image, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
+//									cv::circle(out_image_mask, cv::Point((int)imagePoints_LiDAR2ZED[j].x, (int)imagePoints_LiDAR2ZED[j].y), 3, cv::Scalar(0, 255, 0), 0.5, cv::LINE_8);
 //								}
 //							}
 //						}
@@ -2089,8 +2110,8 @@ int object_tracking() {
 //	
 //
 //		//動画の出力
-//		img_out_name = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
-//		cv::imwrite(img_out_name, out_image);
+//		img_out_name_mask = out_put_image_file_path + "/image" + std::to_string(i_yolo_lidar) + ".png";
+//		cv::imwrite(img_out_name_mask, out_image_mask);
 //
 //		std::cout << i_yolo_lidar << std::endl;
 //
