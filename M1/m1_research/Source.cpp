@@ -605,8 +605,16 @@ int object_tracking() {
 
 
 
+
 	while (1)
 	{
+		// 認識範囲内のLiDARの点群数をテキストファイルに保存していく
+		std::ofstream lidar_points_on_detected_area;
+		std::string lidar_points_on_detected_area_filename = "D:\\M1\\Mask_RCNN\\LiDAR_points_on_detected_area_result_text\\image" + std::to_string(i_yolo_lidar) + ".txt";
+		lidar_points_on_detected_area.open(lidar_points_on_detected_area_filename);
+
+
+
 		//カラー動画の読み込み
 		frame_color >> color_image;
 
@@ -785,6 +793,7 @@ int object_tracking() {
 		}
 
 
+
 		// find representive point //
 		// use fistgram /////////////////////////////////////////
 
@@ -824,6 +833,70 @@ int object_tracking() {
 		max_coordinate_container3 = get_median(container_lidar3);
 		max_coordinate_container4 = get_median(container_lidar4);
 		max_coordinate_container5 = get_median(container_lidar5);
+
+
+
+		//テキストファイルに認識範囲のLiDARの点群結果を出力していく
+
+		lidar_points_on_detected_area << "Person1" << "\t" << person_lidar1.size() << "\n";
+		for (int i = 0; i < person_lidar1.size(); i++)
+		{
+			lidar_points_on_detected_area << person_lidar1[i].x << "\t" << person_lidar1[i].y << "\t" << person_lidar1[i].z << "\t" << sqrt(person_lidar1[i].x*person_lidar1[i].x + person_lidar1[i].y*person_lidar1[i].y*person_lidar1[i].z*person_lidar1[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_person1.x*max_coordinate_person1.x + max_coordinate_person1.y*max_coordinate_person1.y*max_coordinate_person1.z*max_coordinate_person1.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+
+		lidar_points_on_detected_area << "Person2" << "\t" << person_lidar2.size() << "\n";
+		for (int i = 0; i < person_lidar2.size(); i++)
+		{
+			lidar_points_on_detected_area << person_lidar2[i].x << "\t" << person_lidar2[i].y << "\t" << person_lidar2[i].z << "\t" << sqrt(person_lidar2[i].x*person_lidar2[i].x + person_lidar2[i].y*person_lidar2[i].y*person_lidar2[i].z*person_lidar2[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_person2.x*max_coordinate_person2.x + max_coordinate_person2.y*max_coordinate_person2.y*max_coordinate_person2.z*max_coordinate_person2.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+
+		lidar_points_on_detected_area << "Container1" << "\t" << container_lidar1.size() << "\n";
+		for (int i = 0; i < container_lidar1.size(); i++)
+		{
+			lidar_points_on_detected_area << container_lidar1[i].x << "\t" << container_lidar1[i].y << "\t" << container_lidar1[i].z << "\t" << sqrt(container_lidar1[i].x*container_lidar1[i].x + container_lidar1[i].y*container_lidar1[i].y*container_lidar1[i].z*container_lidar1[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container1.x*max_coordinate_container1.x + max_coordinate_container1.y*max_coordinate_container1.y*max_coordinate_container1.z*max_coordinate_container1.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+
+		lidar_points_on_detected_area << "Container2" << "\t" << container_lidar2.size() << "\n";
+		for (int i = 0; i < container_lidar2.size(); i++)
+		{
+			lidar_points_on_detected_area << container_lidar2[i].x << "\t" << container_lidar2[i].y << "\t" << container_lidar2[i].z << "\t" << sqrt(container_lidar2[i].x*container_lidar2[i].x + container_lidar2[i].y*container_lidar2[i].y*container_lidar2[i].z*container_lidar2[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container2.x*max_coordinate_container2.x + max_coordinate_container2.y*max_coordinate_container2.y*max_coordinate_container2.z*max_coordinate_container2.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+
+		lidar_points_on_detected_area << "Container3" << "\t" << container_lidar3.size() << "\n";
+		for (int i = 0; i < container_lidar3.size(); i++)
+		{
+			lidar_points_on_detected_area << container_lidar3[i].x << "\t" << container_lidar3[i].y << "\t" << container_lidar3[i].z << "\t" << sqrt(container_lidar3[i].x*container_lidar3[i].x + container_lidar3[i].y*container_lidar3[i].y*container_lidar3[i].z*container_lidar3[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container3.x*max_coordinate_container3.x + max_coordinate_container3.y*max_coordinate_container3.y*max_coordinate_container3.z*max_coordinate_container3.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+		lidar_points_on_detected_area << "Container4" << "\t" << container_lidar4.size() << "\n";
+		for (int i = 0; i < container_lidar4.size(); i++)
+		{
+			lidar_points_on_detected_area << container_lidar4[i].x << "\t" << container_lidar4[i].y << "\t" << container_lidar4[i].z << "\t" << sqrt(container_lidar4[i].x*container_lidar4[i].x + container_lidar4[i].y*container_lidar4[i].y*container_lidar4[i].z*container_lidar4[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container4.x*max_coordinate_container4.x + max_coordinate_container4.y*max_coordinate_container4.y*max_coordinate_container4.z*max_coordinate_container4.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
+
+		lidar_points_on_detected_area << "Container5" << "\t" << container_lidar5.size() << "\n";
+		for (int i = 0; i < container_lidar5.size(); i++)
+		{
+			lidar_points_on_detected_area << container_lidar5[i].x << "\t" << container_lidar5[i].y << "\t" << container_lidar5[i].z << "\t" << sqrt(container_lidar5[i].x*container_lidar5[i].x + container_lidar5[i].y*container_lidar5[i].y*container_lidar5[i].z*container_lidar5[i].z) << "\n";
+		}
+		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container5.x*max_coordinate_container5.x + max_coordinate_container5.y*max_coordinate_container5.y*max_coordinate_container5.z*max_coordinate_container5.z) << "\n";
+		lidar_points_on_detected_area << "\n\n";
 
 
 		/*max_distance_person1 = max_coordinate_person1.x*max_coordinate_person1.x + max_coordinate_person1.y*max_coordinate_person1.y + max_coordinate_person1.z*max_coordinate_person1.z;
@@ -896,13 +969,13 @@ int object_tracking() {
 		gather_represent_coordinate_container = erase_points(gather_represent_coordinate_container);
 
 
-		for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
+		/*for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
 		{
 			for (int j = 0; j < gather_represent_coordinate_person[i].size(); j++)
 			{
 				printf("gather_represent_coordinate_person[%d][%d]=%lf\n", i, j, sqrt(gather_represent_coordinate_person[i][j].x*gather_represent_coordinate_person[i][j].x + gather_represent_coordinate_person[i][j].y*gather_represent_coordinate_person[i][j].y + gather_represent_coordinate_person[i][j].z*gather_represent_coordinate_person[i][j].z));
 			}
-		}
+		}*/
 
 
 		
@@ -965,6 +1038,12 @@ int object_tracking() {
 
 		imagePoints_LiDAR2ZED.clear();
 		imagePoints_LiDAR2ZED.shrink_to_fit();
+
+
+
+		// 認識範囲内のLiDARの点群数をテキストファイルに保存していく
+		lidar_points_on_detected_area.close();
+
 	}
 
 
@@ -997,6 +1076,7 @@ int object_tracking() {
 		gather_represent_distance_container_text << std::endl;
 		gather_represent_distance_container_text << std::endl;
 	}
+
 
 
 
