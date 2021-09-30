@@ -2714,11 +2714,11 @@ vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec
 	{
 		for (int j = 0; j < max_coordinate_2vec[i].size(); j++)
 		{
-			if (j >= 3)
+			if (j >= 2)
 			{
 				// erase(参考サイト)https://cpprefjp.github.io/reference/vector/vector/erase.html
 				//max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].begin() + (j - 1));
-				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].end() - 2);
+				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].end() - 3);
 			}
 		}
 	}
