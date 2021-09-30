@@ -1,7 +1,7 @@
 # My research
 
 ## 研究紹介
-### ２０２1後期（修士1年）
+### ２０２１後期（修士1年）
 
 #### 3. 〇〇(/)
 - [Slide]
@@ -39,7 +39,7 @@ I joind the 27th Tri-U international joint seminar and symposium online, and pre
 Mask R-CNNによって認識された物体領域内のLiDAR点群を抽出することで，物体位置の計測を試みた．LiDARの点群を画像に投影する際のずれや点群数が少ないことから，良好に物体の位置を計測することが出来ないという結果が得られた．今後は，今回導入したLiDARよりも点群を多く取得することが出来るLivox LiDARを使うことで，物体位置の計測ならびに追跡を行っていく．
 
 
-### ２０２1前期（修士1年）
+### ２０２１前期（修士1年）
 
 #### 2. インスタンスセグメンテーションを用いた作業空間内物体認識システムの開発(6/11)
 - [Slide](https://github.com/yuki-research/My_research/files/6641805/0611_P_Masuda.pdf)
