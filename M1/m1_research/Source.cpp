@@ -78,6 +78,7 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec);
 int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);//gnuplot 修正後(ver1)
 //int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //gnuplot 修正前
+int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);
 
 
 
@@ -613,6 +614,20 @@ int object_tracking() {
 	gid = _popen("C:/Win64App/gnuplot/bin/gnuplot.exe", "w");
 
 
+	//代表点の結果をテキストファイルに書き出す
+	string sFilePath_RepresentativePoint;
+	FILE *fp_ww_representative;
+	errno_t err;
+	sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result\\output.txt";
+
+	err = fopen_s(&fp_ww_representative, sFilePath_RepresentativePoint.c_str(), "wt");
+
+	if (err != 0)
+	{
+		std::cout << "cannot open this file!" << endl;
+	}
+
+
 
 
 	while (1)
@@ -923,6 +938,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "\n\n";
 
 
+
 		/*max_distance_person1 = max_coordinate_person1.x*max_coordinate_person1.x + max_coordinate_person1.y*max_coordinate_person1.y + max_coordinate_person1.z*max_coordinate_person1.z;
 		max_distance_person1 = sqrt(max_distance_person1);
 		printf("max_distance_person1=%lf\n", max_distance_person1);*/
@@ -1040,6 +1056,9 @@ int object_tracking() {
 		//gnuplot_mapping(gid, gather_represent_coordinate_person, gather_represent_coordinate_container);
 
 
+		//代表点の結果をテキストファイルに書き出す
+		output_to_textfile(fp_ww_representative, gather_represent_coordinate_person, gather_represent_coordinate_container);
+
 
 
 		//画像の出力
@@ -1150,6 +1169,7 @@ int object_tracking() {
 
 
 
+	fclose(fp_ww_representative);
 
 	frame_color.release();
 	out_frame_color.release();
@@ -2755,7 +2775,7 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 	fprintf(gid, "set bmargin screen 0.2\n");
 	fprintf(gid, "set key right outside\n");
 
-	fprintf(gid, "plot for [i=0:*] '-' index i with linespoints title 'Container' lc 'orange'\n");
+	fprintf(gid, "plot for [j=0:*] '-' index j with linespoints title 'Container' lc 'orange'\n");
 
 	for (int i = 0; i < all_max_coordinate_obj2.size(); i++)
 	{
@@ -2777,6 +2797,37 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 
 	return 0;
 }
+
+
+
+//代表点の結果をテキストファイルに保存（gnuplotで表示させるため）
+int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2)
+{
+	for (int i = 0; i < all_max_coordinate_obj1.size(); i++)
+	{
+		for (int j = 0; j < all_max_coordinate_obj1[i].size(); j++)
+		{
+			fprintf_s(output_textfile, "%d\t%lf\t%lf\t%lf\t%s\n", i_yolo_lidar, all_max_coordinate_obj1[i][j].x, all_max_coordinate_obj1[i][j].y, all_max_coordinate_obj1[i][j].z, "person");
+		}
+
+		fprintf_s(output_textfile, "\n\n");
+	}
+
+	for (int i = 0; i < all_max_coordinate_obj2.size(); i++) 
+	{
+		for (int j = 0; j < all_max_coordinate_obj2[i].size(); j++)
+		{
+			fprintf_s(output_textfile, "%d\t%lf\t%lf\t%lf\t%s\n", i_yolo_lidar, all_max_coordinate_obj2[i][j].x, all_max_coordinate_obj2[i][j].y, all_max_coordinate_obj2[i][j].z, "container");
+		}
+
+		fprintf_s(output_textfile, "\n\n");
+	}
+
+
+	return 0;
+}
+
+
 
 
 
