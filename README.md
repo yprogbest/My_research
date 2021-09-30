@@ -36,7 +36,7 @@ I joind the 27th Tri-U international joint seminar and symposium online, and pre
 ![568EFD73-A36E-40F3-A6B4-1889553F12EE](https://user-images.githubusercontent.com/82224433/135467042-93cf71e1-ebf6-4cb5-83b3-5c10afa9c1f8.png)
 
 ##### 実験結果
-Mask R-CNNによって認識された物体領域内のLiDAR点群を抽出することで，物体位置の計測を試みた．LiDARの点群を画像に投影する際のずれや点群数が少ないことから，良好に物体の位置を計測吸うことが出来ないという結果が得られた．今後は，今回導入したLiDARよりも点群を多く取得することが出来るLivox LiDARを使うことで，物体位置の計測ならびに追跡を行っていく．
+Mask R-CNNによって認識された物体領域内のLiDAR点群を抽出することで，物体位置の計測を試みた．LiDARの点群を画像に投影する際のずれや点群数が少ないことから，良好に物体の位置を計測することが出来ないという結果が得られた．今後は，今回導入したLiDARよりも点群を多く取得することが出来るLivox LiDARを使うことで，物体位置の計測ならびに追跡を行っていく．
 
 
 ### ２０２1前期（修士1年）
