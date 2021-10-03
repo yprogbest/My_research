@@ -1,0 +1,15 @@
+<launch>
+  <!-- Load the HajimeCart URDF model into the parameter server -->
+  <!-- <param name="robot_description" textfile="$(find hajimecart_description)/urdf/hajimecart_robothw.urdf"/> -->
+  <!-- Convert /joint_states messages published by Gazebo to /tf messages,
+       e.g., for rviz-->
+       
+  <!-- <node name="robot_state_publisher" pkg="robot_state_publisher"
+        type="robot_state_publisher" output="screen"/> -->
+
+  <include file="$(find navigation_test)/launch/amcl.launch"/>
+  <include file="$(find navigation_test)/launch/move_base.launch"/>
+  
+  <node name="rviz" pkg="rviz" type="rviz"/>
+
+</launch>

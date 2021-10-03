@@ -1,0 +1,26 @@
+<launch>
+
+  <!-- LiDAR -->
+  <include file="$(find ydlidar_ros)/launch/X2L.launch" />
+
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find navigation_test)/maps/map.yaml" output="screen">
+    <param name="frame_id" value="map"/>
+  </node>
+
+   <!-- Place map frame at odometry frame -->
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster"
+      args="0 0 0 0 0 0 map odom 100"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="odom_ootprint_broadcaster"
+  args="0 0 0 0 0 0 odom base_footprint 100"/>
+  
+  <!-- AMCL -->
+  <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
+      <rosparam command="load" file="$(find navigation_test)/config/amcl.yaml" />
+      <param name="base_frame_id" value="base_footprint" />
+      <param name="odom_frame_id" value="odom" />
+      <param name="global_frame_id" value="map" />
+  </node>
+
+
+</launch>

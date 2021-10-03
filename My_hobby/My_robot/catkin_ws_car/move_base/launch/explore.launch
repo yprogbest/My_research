@@ -1,0 +1,26 @@
+<launch>
+    <node pkg="explore_lite" type="explore" respawn="false" name="explore" output="screen">
+        <!-- ロボットのベースフレームの名前。これは、マップ上のロボットの位置を決定するために使用されます。必須。 -->
+        <param name="robot_base_frame" value="base_footprint"/>
+        <!-- ソースnav_msgs / OccupancyGridのトピックを指定します。必須。 -->
+        <param name="costmap_topic" value="move_base/global_costmap/costmap"/>
+        <!-- ソースmap_msgs / OccupancyGridUpdateのトピックを指定します。マップのソースが常に完全な更新を公開している場合、つまりこのトピックを提供していない場合は必要ありません。 -->
+        <param name="costmap_updates_topic" value="move_base/global_costmap/costmap_updates"/>
+        <!-- 視覚化されたフロンティアを公開するかどうかを指定します。 -->
+        <param name="visualize" value="true"/>
+       <!-- 新しいフロンティアが計算され、目標が再検討されるHz単位のレート。 -->
+        <param name="planner_frequency" value="1.0"/>
+       <!-- 秒単位の時間。ロボットはのための任意の進捗状況にしない場合はprogress_timeoutを、現在の目標は、放棄されます。 -->
+        <param name="progress_timeout" value="30.0"/>
+        <!-- フロンティアの重み付けに使用されます。この乗法パラメーターは、フロンティアの重みのフロンティアの潜在的なコンポーネント（フロンティアまでの距離）に影響を与えます。 -->
+        <param name="potential_scale" value="1e-3"/>
+        <!-- フロンティアの重み付けに使用されます。この乗法パラメータは、フロンティアウェイトのフロンティア方向コンポーネントに影響を与えます。このパラメーターは現在何も実行せず、上位互換性のためにのみ提供されています。 -->
+        <param name="orientation_scale" value="0.0"/>
+        <!-- フロンティアの重み付けに使用されます。この乗法パラメーターは、フロンティア重み（フロンティアサイズ）のフロンティアゲインコンポーネントに影響を与えます。 -->
+        <param name="gain_scale" value="1.0"/>
+        <!-- ロボットのポーズを変換するときに使用する変換許容値。 -->
+        <param name="transform_tolerance" value="0.1"/>
+        <!-- フロンティアを探査目標と見なすためのフロンティアの最小サイズ。メートル単位。 -->
+        <param name="min_frontier_size" value="0.1"/>
+    </node>
+</launch>
