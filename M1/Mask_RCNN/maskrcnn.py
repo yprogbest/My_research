@@ -178,13 +178,14 @@ def main():
     input_folder = "/home/ecb/instance_segmentation/Mask_RCNN/Movie/"
 
 
-    input_folder = input_folder + "image_to_movie_20201117_Container_around_workshop_low_position"
+    #input_folder = input_folder + "image_to_movie_20201117_Container_around_workshop_low_position"
     #input_folder = input_folder + "image_to_movie_20201223112457"
     #input_folder = input_folder + "20210609143914"
 
-    
 
-    input_image = input_folder + "/out_cam1_remap.mov"
+    # input_image = input_folder + "/out_cam1_remap.mov"
+    input_image = input_folder + "out_cam1_remap.mov"
+
     cap = cv2.VideoCapture(input_image)
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) # 動画の画面横幅
