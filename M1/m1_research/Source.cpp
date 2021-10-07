@@ -12,10 +12,15 @@
 #include <opencv2/opencv.hpp>//OpenCVのインクルード
 #include "opencv2/highgui/highgui.hpp"
 
+//https://qiita.com/yusa0827/items/135d548222f73de7b585
+#include <Eigen/Core>
 
-#define IMG_XSIZE 672
-#define IMG_YSIZE 376
 
+//#define IMG_XSIZE 672
+//#define IMG_YSIZE 376
+
+#define IMG_XSIZE 1280
+#define IMG_YSIZE 720
 
 //テキストファイル内の各行の可能最大文字数として定義
 #define YOLO_FILE_LINE_MAX_BUFFER_SIZE	1024
@@ -55,6 +60,7 @@ struct lidar_int {
 //using宣言
 using namespace cv;
 using namespace std;
+using namespace Eigen;
 
 
 int nCommand;
@@ -79,7 +85,7 @@ vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec
 int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);//gnuplot 修正後(ver1)
 //int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //gnuplot 修正前
 int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);
-
+int remap_stereo();
 
 
 
@@ -121,6 +127,10 @@ void main(int argc, const char* argv[])
 
 				break;
 
+			case 5:
+				remap_stereo();
+				break;
+
 
 
 			case 0:
@@ -144,7 +154,8 @@ void menu_screen()
 	printf("<<2>>:segmentationの背景の画素の割合\n");
 	printf("<<3>>:YOLOの認識結果のファイルを1フレームごと保存\n");
 	printf("<<4>>:【メイン】物体追跡\n");
-	printf("<<5>>:○○\n");
+	printf("<<5>>:ステレオ画像から動画を作成（remap込み）\n");
+	printf("<<6>>:○○\n");
 	printf("<<0>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -522,7 +533,8 @@ int object_tracking() {
 	cv::Mat mat_T_LiDAR2ZED = cv::Mat::zeros(3, 1, CV_64FC1);
 
 
-	std::string sFilePath_PnP_rvec_tvec = "D:\\OpenCV_C++_practice\\!2_point_cloud_xyz11.txt_solve_PnP_K_D_rvec_tvec.yaml";
+	//std::string sFilePath_PnP_rvec_tvec = "D:\\OpenCV_C++_practice\\!2_point_cloud_xyz11.txt_solve_PnP_K_D_rvec_tvec.yaml";
+	std::string sFilePath_PnP_rvec_tvec = "D:\\1004_livox_zed2\\point_cloud_xyz.txt_solve_PnP_K_D_rvec_tvec.yaml";
 
 	cv::FileStorage fs_rvec_tvec(sFilePath_PnP_rvec_tvec, FileStorage::READ);
 
@@ -618,7 +630,8 @@ int object_tracking() {
 	string sFilePath_RepresentativePoint;
 	FILE *fp_ww_representative;
 	errno_t err;
-	sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result\\output.txt";
+	//sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result\\output.txt";
+	sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result2\\output.txt";
 
 	err = fopen_s(&fp_ww_representative, sFilePath_RepresentativePoint.c_str(), "wt");
 
@@ -642,13 +655,15 @@ int object_tracking() {
 		//カラー動画の読み込み
 		frame_color >> color_image;
 
+
 		int color_rows = color_image.rows;
 		int color_cols = color_image.cols;
 
 
 		//マスク画像の読み込み
 		std::string mask_image_name;
-		mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result\\image" + std::to_string(i_yolo_lidar) + ".png";
+		//mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result\\image" + std::to_string(i_yolo_lidar) + ".png";
+		mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result2\\image" + std::to_string(i_yolo_lidar) + ".png";
 		mask_image = cv::imread(mask_image_name);
 		
 
@@ -669,7 +684,8 @@ int object_tracking() {
 
 		//LiDARのテキストファイルを読み込むためのファイルを用意
 		std::string sFilePath_point_cloud_on_image;
-		sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/point_cloud" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
+		//sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/point_cloud" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
+		sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/result_lidar_" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
 
 		//ファイルを開く
 		std::ifstream lidar_text_file;
@@ -880,7 +896,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Person1" << "\t" << person_lidar1.size() << "\n";
 		for (int i = 0; i < person_lidar1.size(); i++)
 		{
-			lidar_points_on_detected_area << person_lidar1[i].x << "\t" << person_lidar1[i].y << "\t" << person_lidar1[i].z << "\t" << sqrt(person_lidar1[i].x*person_lidar1[i].x + person_lidar1[i].y*person_lidar1[i].y*person_lidar1[i].z*person_lidar1[i].z) << "\n";
+			lidar_points_on_detected_area << person_lidar1[i].x << "\t" << person_lidar1[i].y << "\t" << person_lidar1[i].z << "\t" << sqrt(person_lidar1[i].x*person_lidar1[i].x + person_lidar1[i].y*person_lidar1[i].y + person_lidar1[i].z*person_lidar1[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_person1.x*max_coordinate_person1.x + max_coordinate_person1.y*max_coordinate_person1.y*max_coordinate_person1.z*max_coordinate_person1.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -889,7 +905,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Person2" << "\t" << person_lidar2.size() << "\n";
 		for (int i = 0; i < person_lidar2.size(); i++)
 		{
-			lidar_points_on_detected_area << person_lidar2[i].x << "\t" << person_lidar2[i].y << "\t" << person_lidar2[i].z << "\t" << sqrt(person_lidar2[i].x*person_lidar2[i].x + person_lidar2[i].y*person_lidar2[i].y*person_lidar2[i].z*person_lidar2[i].z) << "\n";
+			lidar_points_on_detected_area << person_lidar2[i].x << "\t" << person_lidar2[i].y << "\t" << person_lidar2[i].z << "\t" << sqrt(person_lidar2[i].x*person_lidar2[i].x + person_lidar2[i].y*person_lidar2[i].y + person_lidar2[i].z*person_lidar2[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_person2.x*max_coordinate_person2.x + max_coordinate_person2.y*max_coordinate_person2.y*max_coordinate_person2.z*max_coordinate_person2.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -898,7 +914,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Container1" << "\t" << container_lidar1.size() << "\n";
 		for (int i = 0; i < container_lidar1.size(); i++)
 		{
-			lidar_points_on_detected_area << container_lidar1[i].x << "\t" << container_lidar1[i].y << "\t" << container_lidar1[i].z << "\t" << sqrt(container_lidar1[i].x*container_lidar1[i].x + container_lidar1[i].y*container_lidar1[i].y*container_lidar1[i].z*container_lidar1[i].z) << "\n";
+			lidar_points_on_detected_area << container_lidar1[i].x << "\t" << container_lidar1[i].y << "\t" << container_lidar1[i].z << "\t" << sqrt(container_lidar1[i].x*container_lidar1[i].x + container_lidar1[i].y*container_lidar1[i].y + container_lidar1[i].z*container_lidar1[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container1.x*max_coordinate_container1.x + max_coordinate_container1.y*max_coordinate_container1.y*max_coordinate_container1.z*max_coordinate_container1.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -907,7 +923,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Container2" << "\t" << container_lidar2.size() << "\n";
 		for (int i = 0; i < container_lidar2.size(); i++)
 		{
-			lidar_points_on_detected_area << container_lidar2[i].x << "\t" << container_lidar2[i].y << "\t" << container_lidar2[i].z << "\t" << sqrt(container_lidar2[i].x*container_lidar2[i].x + container_lidar2[i].y*container_lidar2[i].y*container_lidar2[i].z*container_lidar2[i].z) << "\n";
+			lidar_points_on_detected_area << container_lidar2[i].x << "\t" << container_lidar2[i].y << "\t" << container_lidar2[i].z << "\t" << sqrt(container_lidar2[i].x*container_lidar2[i].x + container_lidar2[i].y*container_lidar2[i].y + container_lidar2[i].z*container_lidar2[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container2.x*max_coordinate_container2.x + max_coordinate_container2.y*max_coordinate_container2.y*max_coordinate_container2.z*max_coordinate_container2.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -916,7 +932,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Container3" << "\t" << container_lidar3.size() << "\n";
 		for (int i = 0; i < container_lidar3.size(); i++)
 		{
-			lidar_points_on_detected_area << container_lidar3[i].x << "\t" << container_lidar3[i].y << "\t" << container_lidar3[i].z << "\t" << sqrt(container_lidar3[i].x*container_lidar3[i].x + container_lidar3[i].y*container_lidar3[i].y*container_lidar3[i].z*container_lidar3[i].z) << "\n";
+			lidar_points_on_detected_area << container_lidar3[i].x << "\t" << container_lidar3[i].y << "\t" << container_lidar3[i].z << "\t" << sqrt(container_lidar3[i].x*container_lidar3[i].x + container_lidar3[i].y*container_lidar3[i].y + container_lidar3[i].z*container_lidar3[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container3.x*max_coordinate_container3.x + max_coordinate_container3.y*max_coordinate_container3.y*max_coordinate_container3.z*max_coordinate_container3.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -924,7 +940,7 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Container4" << "\t" << container_lidar4.size() << "\n";
 		for (int i = 0; i < container_lidar4.size(); i++)
 		{
-			lidar_points_on_detected_area << container_lidar4[i].x << "\t" << container_lidar4[i].y << "\t" << container_lidar4[i].z << "\t" << sqrt(container_lidar4[i].x*container_lidar4[i].x + container_lidar4[i].y*container_lidar4[i].y*container_lidar4[i].z*container_lidar4[i].z) << "\n";
+			lidar_points_on_detected_area << container_lidar4[i].x << "\t" << container_lidar4[i].y << "\t" << container_lidar4[i].z << "\t" << sqrt(container_lidar4[i].x*container_lidar4[i].x + container_lidar4[i].y*container_lidar4[i].y + container_lidar4[i].z*container_lidar4[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container4.x*max_coordinate_container4.x + max_coordinate_container4.y*max_coordinate_container4.y*max_coordinate_container4.z*max_coordinate_container4.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
@@ -932,10 +948,13 @@ int object_tracking() {
 		lidar_points_on_detected_area << "Container5" << "\t" << container_lidar5.size() << "\n";
 		for (int i = 0; i < container_lidar5.size(); i++)
 		{
-			lidar_points_on_detected_area << container_lidar5[i].x << "\t" << container_lidar5[i].y << "\t" << container_lidar5[i].z << "\t" << sqrt(container_lidar5[i].x*container_lidar5[i].x + container_lidar5[i].y*container_lidar5[i].y*container_lidar5[i].z*container_lidar5[i].z) << "\n";
+			lidar_points_on_detected_area << container_lidar5[i].x << "\t" << container_lidar5[i].y << "\t" << container_lidar5[i].z << "\t" << sqrt(container_lidar5[i].x*container_lidar5[i].x + container_lidar5[i].y*container_lidar5[i].y + container_lidar5[i].z*container_lidar5[i].z) << "\n";
 		}
 		lidar_points_on_detected_area << "\n" << "median value" << "\t" << sqrt(max_coordinate_container5.x*max_coordinate_container5.x + max_coordinate_container5.y*max_coordinate_container5.y*max_coordinate_container5.z*max_coordinate_container5.z) << "\n";
 		lidar_points_on_detected_area << "\n\n";
+
+
+
 
 
 
@@ -962,6 +981,9 @@ int object_tracking() {
 		container_max_distance.push_back(max_distance_container3);
 		container_max_distance.push_back(max_distance_container4);
 		container_max_distance.push_back(max_distance_container5);*/
+
+
+
 
 
 		//coordinate of the max distance
@@ -2609,7 +2631,7 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 	//diff_distanceが最も最小になる値を取得するために用意
 	float min_diff_distance;
 
-	float threhold = 3.0;
+	float threhold = 5.0;
 	
 
 
@@ -2896,4 +2918,127 @@ int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coo
 //
 //	return 0;
 //}
+
+
+
+//カルマンフィルター（http://pukulab.blog.fc2.com/blog-entry-39.html）
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 5. ステレオ画像から動画を作成（remap込み）
+
+int remap_stereo()
+{
+	string sFilePath_stereo_calibration_parameters;
+	string image_name;
+
+	Mat img_cam1(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
+	Mat img_cam_left;
+	Mat img_cam1_remap;
+
+
+
+	string sFilePath_movie1;
+
+	const Size IM_SIZE = Size(IMG_XSIZE, IMG_YSIZE);
+
+	int num = 0;
+
+	Mat K1, K2; //Mat cameraMatrix1, cameraMatrix2;
+	Mat D1, D2; //Mat distCoeffs1, distCoeffs2;
+
+	Mat map11, map12, map21, map22;
+
+
+	Mat R, F, E;
+	Vec3d T;
+
+	Mat R1, R2, P1, P2, Q;
+
+
+
+
+	string sMainFolder;
+	std::cout << "camera yaml file name = " << std::endl;
+	std::cin >> sMainFolder;
+
+
+	
+	sFilePath_stereo_calibration_parameters = sMainFolder;
+
+	FileStorage fs_stereo_param(sFilePath_stereo_calibration_parameters, FileStorage::READ);
+
+
+	fs_stereo_param["K1"] >> K1;
+	fs_stereo_param["K2"] >> K2;
+	fs_stereo_param["D1"] >> D1;
+	fs_stereo_param["D2"] >> D2;
+	//fs_stereo_param["R"] >> R;
+	//fs_stereo_param["T"] >> T;
+	//fs_stereo_param["E"] >> E;
+	//fs_stereo_param["F"] >> F;
+
+	fs_stereo_param["R1"] >> R1;
+	fs_stereo_param["R2"] >> R2;
+	fs_stereo_param["P1"] >> P1;
+	fs_stereo_param["P2"] >> P2;
+	fs_stereo_param["Q"] >> Q;
+
+	fs_stereo_param.release();
+
+	cout << "The stereo camera parameters have been loaded!\n";
+
+
+	string image_folder;
+	std::cout << "image folder= " << std::endl;
+	std::cin >> image_folder;
+
+
+	string output_folder;
+	std::cout << "Output Folder = " << std::endl;
+	std::cin >> output_folder;
+
+	Size size = Size(IMG_XSIZE, IMG_YSIZE);
+
+	VideoWriter writer_left(output_folder + "/remap.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, size);
+
+
+	while (1)
+	{
+		initUndistortRectifyMap(K1, D1, R1, P1, IM_SIZE, CV_16SC2, map11, map12);
+
+		image_name = image_folder + "/result_stereimage_" + std::to_string(num) + ".png";
+
+		std::cout << image_name << std::endl;
+
+		img_cam1 = cv::imread(image_name);
+
+		img_cam_left = img_cam1(cv::Rect(0, 0, img_cam1.cols / 2, img_cam1.rows));
+
+		cv::remap(img_cam_left, img_cam1_remap, map11, map12, INTER_LINEAR);
+
+
+		writer_left << img_cam1_remap;
+
+
+		num++;
+	}
+
+
+	writer_left.release();
+	destroyAllWindows();
+
+	return 0;
+}
+
 
