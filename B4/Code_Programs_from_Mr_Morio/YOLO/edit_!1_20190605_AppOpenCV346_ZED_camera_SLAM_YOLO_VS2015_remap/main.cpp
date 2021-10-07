@@ -39,8 +39,11 @@
 #define PI	3.141592
 
 
-#define	IMG_XSIZE			672
-#define	IMG_YSIZE			376
+//#define	IMG_XSIZE 672
+//#define	IMG_YSIZE 376
+
+#define IMG_XSIZE 1280
+#define IMG_YSIZE 720
 
 
 
@@ -701,7 +704,7 @@ int main(int argc, char **argv)
 
 
 	Mat img_cam1(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
-	Mat img_cam2(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
+	//Mat img_cam2(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
 
 
 
@@ -1833,7 +1836,7 @@ int main(int argc, char **argv)
 
 
 	sFilePath_movie1 = sMainFolder + "/" + sMovieFname + "_cam1.mov";
-	sFilePath_movie2 = sMainFolder + "/" + sMovieFname + "_cam2.mov";
+	//sFilePath_movie2 = sMainFolder + "/" + sMovieFname + "_cam2.mov";
 
 
 	VideoCapture capture1(sFilePath_movie1);
@@ -1843,11 +1846,11 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	VideoCapture capture2(sFilePath_movie2);
+	/*VideoCapture capture2(sFilePath_movie2);
 	if (!capture2.isOpened()) {
 		std::cout << "cannot open the movie file of cam2";
 		return -1;
-	}
+	}*/
 
 
 
@@ -3078,7 +3081,7 @@ int main(int argc, char **argv)
 
 
 		capture1 >> img_cam1;
-		capture2 >> img_cam2;
+		//capture2 >> img_cam2;
 
 
 
@@ -3415,7 +3418,7 @@ int main(int argc, char **argv)
 
 
 		remap(img_cam1, img_cam1_remap, map11, map12, INTER_LINEAR);
-		remap(img_cam2, img_cam2_remap, map21, map22, INTER_LINEAR);
+		//remap(img_cam2, img_cam2_remap, map21, map22, INTER_LINEAR);
 
 
 
