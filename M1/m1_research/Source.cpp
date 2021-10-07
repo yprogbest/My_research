@@ -2939,10 +2939,14 @@ int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coo
 
 int remap_stereo()
 {
+
+	int start_num = 0;
+	int end_num = 311;
+
 	string sFilePath_stereo_calibration_parameters;
 	string image_name;
 
-	Mat img_cam1(IMG_YSIZE, IMG_XSIZE, CV_8UC3);
+	Mat img_cam1;
 	Mat img_cam_left;
 	Mat img_cam1_remap;
 
@@ -2952,7 +2956,7 @@ int remap_stereo()
 
 	const Size IM_SIZE = Size(IMG_XSIZE, IMG_YSIZE);
 
-	int num = 0;
+	int num;
 
 	Mat K1, K2; //Mat cameraMatrix1, cameraMatrix2;
 	Mat D1, D2; //Mat distCoeffs1, distCoeffs2;
@@ -2966,6 +2970,7 @@ int remap_stereo()
 	Mat R1, R2, P1, P2, Q;
 
 
+	string win_dst1 = "dst1";
 
 
 	string sMainFolder;
@@ -3013,8 +3018,9 @@ int remap_stereo()
 	VideoWriter writer_left(output_folder + "/remap.mov", VideoWriter::fourcc('m', 'p', '4', 'v'), 10, size);
 
 
-	while (1)
+	for (num = start_num; num < end_num + 1; num++)
 	{
+
 		initUndistortRectifyMap(K1, D1, R1, P1, IM_SIZE, CV_16SC2, map11, map12);
 
 		image_name = image_folder + "/result_stereimage_" + std::to_string(num) + ".png";
@@ -3027,11 +3033,14 @@ int remap_stereo()
 
 		cv::remap(img_cam_left, img_cam1_remap, map11, map12, INTER_LINEAR);
 
-
 		writer_left << img_cam1_remap;
 
-
-		num++;
+		/*cv::imshow(win_dst1, img_cam1_remap);
+		int key = waitKey(30);
+		if (key >= 0)
+		{
+			break;
+		}*/
 	}
 
 
