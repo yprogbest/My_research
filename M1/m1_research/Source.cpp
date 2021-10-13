@@ -631,7 +631,8 @@ int object_tracking() {
 	FILE *fp_ww_representative;
 	errno_t err;
 	//sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result\\output.txt";
-	sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result2\\output.txt";
+	//sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result2\\output.txt";
+	sFilePath_RepresentativePoint = "D:\\M1\\Mask_RCNN\\gnuplot_result3\\output.txt";
 
 	err = fopen_s(&fp_ww_representative, sFilePath_RepresentativePoint.c_str(), "wt");
 
@@ -663,7 +664,8 @@ int object_tracking() {
 		//マスク画像の読み込み
 		std::string mask_image_name;
 		//mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result\\image" + std::to_string(i_yolo_lidar) + ".png";
-		mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result2\\image" + std::to_string(i_yolo_lidar) + ".png";
+		//mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result2\\image" + std::to_string(i_yolo_lidar) + ".png";
+		mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result3\\image" + std::to_string(i_yolo_lidar) + ".png";
 		mask_image = cv::imread(mask_image_name);
 		
 
@@ -1038,6 +1040,9 @@ int object_tracking() {
 		// Storing the LiDAR points information into the 2D vector
 		std::tie(gather_represent_distance_person, gather_represent_coordinate_person) = gather_representive_point(person_max_coordinate);
 		std::tie(gather_represent_distance_container, gather_represent_coordinate_container) = gather_representive_point(container_max_coordinate);
+
+
+
 
 
 		/*for (int i = 0; i < gather_represent_distance_person.size(); i++)
@@ -2739,7 +2744,7 @@ vector<vector<Point3f>> erase_points(vector<vector<Point3f>> max_coordinate_2vec
 			if (j >= 2)
 			{
 				// erase(参考サイト)https://cpprefjp.github.io/reference/vector/vector/erase.html
-				//max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].begin() + (j - 1));
+				// max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].begin() + (j - 1));
 				max_coordinate_2vec[i].erase(max_coordinate_2vec[i].begin(), max_coordinate_2vec[i].end() - 3);
 			}
 		}
@@ -2941,7 +2946,7 @@ int remap_stereo()
 {
 
 	int start_num = 0;
-	int end_num = 311;
+	int end_num = 292;
 
 	string sFilePath_stereo_calibration_parameters;
 	string image_name;
