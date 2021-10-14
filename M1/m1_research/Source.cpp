@@ -533,8 +533,15 @@ int object_tracking() {
 	cv::Mat mat_T_LiDAR2ZED = cv::Mat::zeros(3, 1, CV_64FC1);
 
 
+
+
+	// ①
 	//std::string sFilePath_PnP_rvec_tvec = "D:\\OpenCV_C++_practice\\!2_point_cloud_xyz11.txt_solve_PnP_K_D_rvec_tvec.yaml";
 	std::string sFilePath_PnP_rvec_tvec = "D:\\1004_livox_zed2\\point_cloud_xyz.txt_solve_PnP_K_D_rvec_tvec.yaml";
+
+
+
+
 
 	cv::FileStorage fs_rvec_tvec(sFilePath_PnP_rvec_tvec, FileStorage::READ);
 
@@ -661,11 +668,21 @@ int object_tracking() {
 		int color_cols = color_image.cols;
 
 
+
+
+
+		// ②
 		//マスク画像の読み込み
 		std::string mask_image_name;
 		//mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result\\image" + std::to_string(i_yolo_lidar) + ".png";
 		//mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result2\\image" + std::to_string(i_yolo_lidar) + ".png";
 		mask_image_name = "D:\\M1\\Mask_RCNN\\result\\mask_image_result3\\image" + std::to_string(i_yolo_lidar) + ".png";
+		
+		
+		
+
+
+		
 		mask_image = cv::imread(mask_image_name);
 		
 
@@ -684,10 +701,17 @@ int object_tracking() {
 
 
 
+
+		// ③
 		//LiDARのテキストファイルを読み込むためのファイルを用意
 		std::string sFilePath_point_cloud_on_image;
 		//sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/point_cloud" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
 		sFilePath_point_cloud_on_image = sFilePath_LiDAR_PointCloud + "/result_lidar_" + std::to_string(i_yolo_lidar) + ".txt_NaN_data_removed.txt";
+
+
+
+
+
 
 		//ファイルを開く
 		std::ifstream lidar_text_file;
@@ -751,7 +775,7 @@ int object_tracking() {
 			if (imagePoints_LiDAR2ZED[k].x < 0 || imagePoints_LiDAR2ZED[k].x >= IMG_XSIZE || imagePoints_LiDAR2ZED[k].y < 0 || imagePoints_LiDAR2ZED[k].y >= IMG_YSIZE) continue;
 
 
-			//LiDAR点群の整数化
+			//LiDAR点群の整数化（四捨五入）
 			imagePoints_LiDAR2ZED[k].x = int(imagePoints_LiDAR2ZED[k].x + 0.5);
 			imagePoints_LiDAR2ZED[k].y = int(imagePoints_LiDAR2ZED[k].y + 0.5);
 
@@ -1008,6 +1032,9 @@ int object_tracking() {
 
 
 
+
+
+		// ④
 		//中央値の結果を画像に描写
 		cv::projectPoints(person_max_coordinate_copy, rvec, tvec, K1, D1, person_max_coordinate_image);
 		cv::projectPoints(container_max_coordinate_copy, rvec, tvec, K1, D1, container_max_coordinate_image);
@@ -1026,6 +1053,9 @@ int object_tracking() {
 			cv::circle(out_image_color, cv::Point((int)container_max_coordinate_image[k].x, (int)container_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
 			cv::circle(out_image_mask, cv::Point((int)container_max_coordinate_image[k].x, (int)container_max_coordinate_image[k].y), 3, cv::Scalar(0, 255, 255), -1);
 		}
+
+
+
 
 
 
@@ -1063,9 +1093,14 @@ int object_tracking() {
 
 
 
+
+
 		//vector内の値を消去
 		gather_represent_coordinate_person = erase_points(gather_represent_coordinate_person);
 		gather_represent_coordinate_container = erase_points(gather_represent_coordinate_container);
+
+
+
 
 
 		for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
@@ -1166,7 +1201,7 @@ int object_tracking() {
 
 
 	//テキストファイルに書き出す
-	std::ofstream gather_represent_distance_person_text;
+	/*std::ofstream gather_represent_distance_person_text;
 	gather_represent_distance_person_text.open("D:\\M1\\Mask_RCNN\\gather_represent_coordinate_person_text\\person.txt");
 
 	for (int i = 0; i < gather_represent_coordinate_person.size(); i++)
@@ -1192,7 +1227,7 @@ int object_tracking() {
 
 		gather_represent_distance_container_text << std::endl;
 		gather_represent_distance_container_text << std::endl;
-	}
+	}*/
 
 
 
@@ -2636,7 +2671,7 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 	//diff_distanceが最も最小になる値を取得するために用意
 	float min_diff_distance;
 
-	float threhold = 5.0;
+	float threhold = 3.0;
 	
 
 
