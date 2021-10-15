@@ -20,14 +20,30 @@
 I joind the 27th Tri-U international joint seminar and symposium online, and presentated my previous research which is for my final report of bachlor's degree.
 
 
-#### 2. 〇〇(/)
-- [Slide]
-- [Report]
+#### 2. 〇〇(10/15)
+- [Slide](https://github.com/yuki-research/My_research/files/7352898/1015_P_Masuda.pdf)
+- [Report](https://github.com/yuki-research/My_research/files/7352899/1015_W_Masuda.pdf)
 
 ##### 要旨
+本研究では，広範囲の農作業空間内における物体の動きを追跡するシステムの開発を試みた．このシステムでは，広範囲かつ密な情報を取得することのできるHorizon LiDARと深層学習モデルMask R-CNNによるカメラベースの物体認識を組み合わせた．今回の実験は，作業者がコンテナを運搬する様子を撮影した．実験を通して，Horizon LiDARの走査方法により，左右端に存在する物体の追跡を行うことが困難である一方，中心付近の物体においては，比較的良好に追跡を行うことが可能であるということが分かった．今後は，深層学習モデルによる検出・認識が困難な状況においても追跡を行うために，ステレオカメラの3次元情報とLiDARの3次元情報を用いた追跡も検討する．
 
+##### マスク画像の作成
+カメラ画像にLiDAR点群を投影した結果から，Mask R-CNNによって認識された領域内のLiDAR点群を抽出するために，マスク画像を作成した．ここでは，Personを赤色，Containerを青色に区別し，1つ目の物体の画素値を255とし，2つ目の物体以降の画素値を30ずつ減少させたマスク画像を作成した．<br>
+![image](https://user-images.githubusercontent.com/82224433/137476355-17b508ef-6b7b-4122-9b40-973a992dc42c.png)
+
+
+##### 代表値の算出と物体追跡
+生成したマスク画像における物体領域内のLiDAR点群を抽出し，代表点を算出する．まず，画像に投影されたLiDAR点群の画像座標系における座標値は帯小数である．そのため，小数第1位を四捨五入することで，各画素に対応するLiDAR点群を抽出した．また，LiDAR点群を整数化したことによって，背景の点群が物体領域内に含まれる可能性があるため，物体領域を1回収縮処理した．<br>
+![image](https://user-images.githubusercontent.com/82224433/137476543-479b9074-1a01-4343-a14c-e5b3bb5ca777.png)<br>
+
+次に，各物体領域内のLiDARの3次元座標，各々の中央値を代表値とした．そして，各物体間の距離を求め，ある一定のしきい値以内に存在する代表値を同じ物体とし，追跡を行った．<br>
+![image](https://user-images.githubusercontent.com/82224433/137476641-03be1103-9527-4e5c-abae-394b8c11ee1d.png)
 
 ##### 実験結果
+- 物体追跡の結果<br>
+![image](https://user-images.githubusercontent.com/82224433/137476762-df2b8a3a-088d-4217-9a76-3089c2d9fdf8.png)<br>
+![image](https://user-images.githubusercontent.com/82224433/137476780-59c26273-d467-4a11-be5e-7ae53e6b8a65.png)<br>
+
 
 
 #### 1. Mask R-CNNとLiDAR点群を用いた物体追跡システムの開発(10/1 夏休みの活動)
