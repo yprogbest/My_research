@@ -8,8 +8,8 @@
         type="robot_state_publisher" output="screen"/> -->
 
   <include file="$(find navigation_test)/launch/amcl.launch"/>
-  <include file="$(find navigation_test)/launch/move_base.launch1"/>
-  <!-- <include file="$(find navigation_test)/launch/move_base.launch2"/> -->
+  <include file="$(find navigation_test)/launch/move_base1.launch"/>
+  <!-- <include file="$(find navigation_test)/launch/move_base2.launch"/> -->
   
   <node name="rviz" pkg="rviz" type="rviz"/>
 
