@@ -7,7 +7,7 @@
   <!-- <node name="robot_state_publisher" pkg="robot_state_publisher"
         type="robot_state_publisher" output="screen"/> -->
 
-  <include file="$(find navigation_test)/launch/amcl.launch"/>
+  <include file="$(find navigation_test)/launch/amcl2.launch"/>
   <include file="$(find navigation_test)/launch/move_base1.launch"/>
   <!-- <include file="$(find navigation_test)/launch/move_base2.launch"/> -->
   
