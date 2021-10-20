@@ -13,7 +13,7 @@
 ##### 実験結果
 
 #### 【The 27th Tri-U International Joint Seminar and Symposium】Object Tracking in Workspace Using a LiDAR-camera Fusion System for Human-collaborative Agricultural Robots(/)
-- [Slide]
+- [Slide](https://github.com/yuki-research/My_research/files/7381365/presentation_slide_part4.pdf)
 - [Report](https://github.com/yuki-research/My_research/files/7260018/Paper.template-Tri-U.2021_masuda_new.pdf)
 - [Poster](https://github.com/yuki-research/My_research/files/7260019/poster_masuda.pdf)
 
