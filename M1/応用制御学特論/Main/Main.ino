@@ -12,7 +12,7 @@
 #define PIN_LEFT_VREF 10
 
 //サーボモータ
-int penguin=3;
+#define penguin 3
 
 
 //DCモータのスピード
