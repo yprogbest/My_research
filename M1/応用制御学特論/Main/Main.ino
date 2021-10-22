@@ -1,3 +1,6 @@
+
+
+
 //右
 #define PIN_RIGHT_IN1 7
 #define PIN_RIGHT_IN2 8
@@ -8,6 +11,11 @@
 #define PIN_LEFT_IN2 5
 #define PIN_LEFT_VREF 10
 
+//サーボモータ
+int penguin=3;
+
+
+//DCモータのスピード
 int Speed = 127;
 
 
@@ -67,26 +75,53 @@ int stop()
 }
 
 
+
+//サーボモータ
+void penDash(int x)
+{//xの値は0~180。
+  int kyori = (x*10.25)+450;//角度からパルス幅への変換式
+  digitalWrite(penguin,HIGH);
+  delayMicroseconds(kyori);
+  digitalWrite(penguin,LOW);
+  delay(5);//速度　5~30くらいが良好。
+}
+
+
+
+
+
 void setup() {
   // put your setup code here, to run once:
+  pinMode(penguin,OUTPUT);
+
   pinMode(PIN_RIGHT_IN1,OUTPUT); 
   pinMode(PIN_RIGHT_IN2,OUTPUT); 
   pinMode(PIN_LEFT_IN1,OUTPUT); 
   pinMode(PIN_LEFT_IN2,OUTPUT); 
-
 }
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
+  foward(Speed);
+
+  penDash(20); //0
+  delay(2000);
+  penDash(95); //90
+  delay(2000);
+  penDash(190); //180
+  delay(2000);
+  penDash(95); //90
+  delay(2000);
+  penDash(20); //0
+  delay(2000);
 
 
-
+  stop();
 
   while(1)
   {
 
   }
-
 
 }
