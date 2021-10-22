@@ -7,16 +7,17 @@ void setup()
 
 void loop() 
 {
-  for(int i=0;i<=180;i++)
-  {//0°から180°へ回転。
-    penDash(i);
-  }
-  for(int j=180;j>0;j--)
-  {//180°から0°へ回転。
-    penDash(j);
-  }
-
-
+    penDash(20); //0
+    delay(2000);
+    penDash(95); //90
+    delay(2000);
+    penDash(190); //180
+    delay(2000);
+    penDash(95); //90
+    delay(2000);
+    penDash(20); //0
+    delay(2000);
+    
     while(1)
   {
     
