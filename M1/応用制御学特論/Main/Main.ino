@@ -32,6 +32,10 @@ const int HEADER=0x59; //frame header of data package
 int Speed = 127;
 
 
+
+int count=0;
+
+
 //前進
 void foward(int speed)
 {
@@ -145,17 +149,18 @@ void LiDAR()
 
           //シリアルブロックに表示
 
-          //Serial.print("dist = ");
-          Serial.print(dist); //output measure distance value of LiDAR
-          Serial.print(" ");
-          //Serial.print("strength = ");
-          Serial.print(strength); //output signal strength value
-          //Serial.print("\t Chip Temprature = ");
-          Serial.print(" ");
-          Serial.print(temprature);
-          Serial.println();
-          //Serial.println(" celcius degree");
+          // //Serial.print("dist = ");
+          // Serial.print(dist); //output measure distance value of LiDAR
+          // Serial.print(" ");
+          // //Serial.print("strength = ");
+          // Serial.print(strength); //output signal strength value
+          // //Serial.print("\t Chip Temprature = ");
+          // Serial.print(" ");
+          // Serial.print(temprature);
+          // Serial.println();
+          // //Serial.println(" celcius degree");
           
+
         }
       }
     }
@@ -184,25 +189,59 @@ void setup() {
 
 void loop() {
 
-  penDash(20); //0
-  LiDAR();
-  delay(2000);
-  penDash(95); //90
-  LiDAR();
-  delay(2000);
-  penDash(190); //180
-  LiDAR();
-  delay(2000);
-  penDash(95); //90
-  LiDAR();
-  delay(2000);
-  penDash(20); //0
-  LiDAR();
-  delay(2000);
+  
 
-
-  while(1)
+  if(count==0)
   {
-    
+    penDash(95); //90°
+    delay(5000);
   }
+  
+  foward(Speed);
+  LiDAR();
+
+  if(dist<50)
+  {
+    left(Speed);
+  }
+  LiDAR();
+
+
+  count++;
+
+
+  // Serial.print("dist = ");
+  // Serial.print(dist);
+  // Serial.print("\n");
+
+
+
+  // penDash(20); //0°
+  // delay(2000);
+  // LiDAR();
+  
+  // penDash(95); //90°
+  // delay(2000);
+  // LiDAR();
+  
+  // penDash(190); //180°
+  // delay(2000);
+  // LiDAR();
+  
+  // penDash(95); //90°
+  // delay(2000);
+  // LiDAR();
+  
+  // penDash(20); //0°
+  // delay(2000);
+  // LiDAR();
+
+  // stop();
+
+  // while(1)
+  // {
+    
+  // }
+
+  
 }
