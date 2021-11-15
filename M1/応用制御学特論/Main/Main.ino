@@ -2,7 +2,8 @@
 
 
 //PID制御(https://kurobekoblog.com/pid)
-#define target 30.0 //壁との距離 30cm
+#define target 40.0 //壁との距離 30cm
+
 #define Kp 15.0 //比例ゲイン
 #define Ki 50.0 //積分ゲイン
 #define Kd 0.3 //微分ゲイン
@@ -41,8 +42,14 @@ int uart[9]; //save data measured by LiDAR
 const int HEADER=0x59; //frame header of data package
 
 
-int flont_distance = 300; //正面との距離
-int side_distance = 150; //左右との距離
+//ローパスフィルタ
+float LPF, lastLPF;
+float k = 0.1;
+
+
+
+int flont_distance = 600; //正面との距離
+int side_distance = 200; //左右との距離
 
 
 
@@ -166,6 +173,14 @@ void LiDAR()
 }
 
 
+
+void raw_pass_filter() //https://garchiving.com/lpf-by-program/
+{
+  LPF += k * (dist-lastLPF);
+  lastLPF = LPF;
+}
+
+
 void PID()
 {
   x = (float)dist;
@@ -211,71 +226,79 @@ void loop() {
   {
     penDash(20); //0°
     servo_direction = "right";
-    delay(5000);
+    delay(10000);
   }
 
   LiDAR();
+  raw_pass_filter();
   
   if(servo_direction == "right") //もし，サーボが右を向いていたら，
   {
-    if(dist > target) //30cm以上なら
+    if(dist == target)
     {
-      foward(255, 230); //右に傾ける
+      foward(230, 230); //正面に進む
+    }
+    else if(dist > target) //30cm以上なら
+    {
+      //foward(250, 220); //右に傾ける
+      foward(250, 200); //右に傾ける
     }
     else
     {
-      foward(230, 255); //左に傾ける
+      //foward(200, 250); //左に傾ける
+      foward(200, 250); //左に傾ける
     }
 
     //階段がある箇所での処理
-    if(dist > side_distance) //もし，1.5mよりも距離が大きくなったら．
-    {
-      stop_(0,0);
+    // if(dist > side_distance) //もし，2.0mよりも距離が大きくなったら．
+    // {
+    //   stop_(0,0);
       
-      penDash(95); //正面を向く
-      delay(2000);
-      LiDAR();
+    //   penDash(95); //正面を向く
+    //   delay(2000);
+    //   LiDAR();
 
-      if(dist > flont_distance) //もし，正面に障害物が無いなら
-      {
-        penDash(190); //左を向く
-        servo_direction = "left";
-        delay(2000);
-      }
+    //   if(dist > flont_distance) //もし，正面に障害物が無いなら
+    //   {
+    //     penDash(190); //左を向く
+    //     servo_direction = "left";
+    //     delay(2000);
+    //   }
 
-    }
+    // }
+
   }
 
 
 
 
-  if(servo_direction == "left") //もし，サーボが左を向いていたら，
-  {
-    if(dist > target) //30cm以上なら
-    {
-      foward(230, 255); //左に傾ける
-    }
-    else
-    {
-      foward(255, 230); //右に傾ける
-    }
+  // if(servo_direction == "left") //もし，サーボが左を向いていたら，
+  // {
+  //   if(dist > target) //30cm以上なら
+  //   {
+  //     foward(230, 255); //左に傾ける
+  //   }
+  //   else
+  //   {
+  //     foward(255, 230); //右に傾ける
+  //   }
 
-    //階段がある箇所での処理
-    if(dist > side_distance) //もし，1.5mよりも距離が大きくなったら．
-    {
-      stop_(0,0);
+  //   //階段がある箇所での処理
+  //   if(dist > side_distance) //もし，2.0mよりも距離が大きくなったら．
+  //   {
+  //     stop_(0,0);
       
-      penDash(95); //正面を向く
-      delay(2000);
-      LiDAR();
-      if(dist > flont_distance) //もし，正面に障害物が無いなら
-      {
-        penDash(20); //右を向く
-        servo_direction = "right";
-        delay(2000);
-      }
-    }
-  }
+  //     penDash(95); //正面を向く
+  //     delay(2000);
+  //     LiDAR();
+  //     if(dist > flont_distance) //もし，正面に障害物が無いなら
+  //     {
+  //       penDash(20); //右を向く
+  //       servo_direction = "right";
+  //       delay(2000);
+  //     }
+  //   }
+  // }
 
 
 
@@ -287,6 +310,9 @@ void loop() {
   Serial.print("\t");
   Serial.print("dist = ");
   Serial.print(dist);
+  Serial.print("\t");
+  Serial.print("LPF = ");
+  Serial.print(LPF);
   Serial.print("\n");
 
 

@@ -1,5 +1,5 @@
 #include <SoftwareSerial.h>
-SoftwareSerial Serial1(2,3);
+SoftwareSerial Serial1(12,11);
 
 int dist; //actual distance measurements of LiDAR
 int strength; //signal strength of LiDAR
@@ -8,6 +8,21 @@ int check; //save check value
 int i;
 int uart[9]; //save data measured by LiDAR
 const int HEADER=0x59; //frame header of data package
+
+
+
+//ローパスフィルタ
+float LPF, lastLPF;
+float k = 0.1;
+
+
+void raw_pass_filter() //https://garchiving.com/lpf-by-program/
+{
+  LPF += k * (dist-lastLPF);
+  lastLPF = LPF;
+}
+
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -53,16 +68,15 @@ void loop() {
           // Serial.println(" celcius degree"); //output chip temperature of LiDAR
 
 
-          //Serial.print("dist = ");
-          Serial.print(dist); //output measure distance value of LiDAR
-          Serial.print(" ");
-          //Serial.print("strength = ");
-          Serial.print(strength); //output signal strength value
-          //Serial.print("\t Chip Temprature = ");
-          Serial.print(" ");
-          Serial.print(temprature);
-          Serial.println();
-          //Serial.println(" celcius degree");
+          raw_pass_filter();
+
+          Serial.print("dist = ");
+          Serial.print(dist);
+          Serial.print("\t");
+          Serial.print("LPF = ");
+          Serial.print(LPF);
+          Serial.print("\n");
+          
         }
       }
     }
