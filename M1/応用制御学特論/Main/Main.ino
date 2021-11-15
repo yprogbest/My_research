@@ -176,7 +176,7 @@ void LiDAR()
 
 void raw_pass_filter() //https://garchiving.com/lpf-by-program/
 {
-  LPF += k * (dist-lastLPF);
+  LPF = (1 - k) * lastLPF + k * (float)dist;
   lastLPF = LPF;
 }
 
