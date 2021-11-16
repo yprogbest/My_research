@@ -2,11 +2,14 @@
 
 
 //PID制御(https://kurobekoblog.com/pid)
-#define target 40.0 //壁との距離 30cm
 
-#define Kp 15.0 //比例ゲイン
-#define Ki 50.0 //積分ゲイン
-#define Kd 0.3 //微分ゲイン
+#define PID_taget 0.0 //PIDの目標値
+
+#define target 30.0 //壁との距離 30cm
+
+#define Kp 1.0 //比例ゲイン
+#define Ki 0.0 //積分ゲイン
+#define Kd 0.0 //微分ゲイン
 
 
 //DCモータ
@@ -33,7 +36,7 @@ String servo_direction; //サーボモータの向き
 //LiDAR
 SoftwareSerial Serial1(12,11);
 
-int dist; //actual distance measurements of LiDAR
+float dist; //actual distance measurements of LiDAR
 int strength; //signal strength of LiDAR
 float temprature; 
 int check; //save check value
@@ -44,7 +47,7 @@ const int HEADER=0x59; //frame header of data package
 
 //ローパスフィルタ
 float LPF, lastLPF;
-float k = 0.1;
+float k = 0.5;
 
 
 
@@ -60,7 +63,6 @@ float x;
 float P, I, D, preP;
 
 
-unsigned int count=0;
 
 
 
@@ -157,7 +159,7 @@ void LiDAR()
 
         if(uart[8]==(check&0xff))
         {
-          dist=uart[2]+uart[3]*256;
+          dist = float(uart[2]+uart[3]*256);
           
           strength=uart[4]+uart[5]*256;
           
@@ -181,9 +183,10 @@ void raw_pass_filter() //https://garchiving.com/lpf-by-program/
 }
 
 
-void PID()
+
+void PID(float Distance)
 {
-  x = (float)dist;
+  x = Distance;
   
   dt = (micros() - preTime) / 1000000.0;
   preTime = micros();
@@ -194,9 +197,9 @@ void PID()
 
   duty += Kp * P + Ki * I + Kd * D;
 
-  if(duty > 800) duty=800;
-  if(duty < 0) duty=0;
-  
+  if(duty<-10) duty = -5;
+  if(duty>10) duty = 5;
+
 }
 
 
@@ -215,42 +218,59 @@ void setup() {
   Serial.begin(9600);
   Serial1.begin(115200);
 
+
+  penDash(20); //0°
+  servo_direction = "right";
+  delay(10000);
 }
+
+
 
 
 void loop() {
 
   
-
-  if(count==0)
-  {
-    penDash(20); //0°
-    servo_direction = "right";
-    delay(10000);
-  }
-
   LiDAR();
   raw_pass_filter();
+  PID(LPF);
   
   if(servo_direction == "right") //もし，サーボが右を向いていたら，
   {
-    if(dist == target)
-    {
-      foward(230, 230); //正面に進む
-    }
-    else if(dist > target) //30cm以上なら
-    {
-      //foward(250, 220); //右に傾ける
-      foward(250, 200); //右に傾ける
-    }
-    else
-    {
-      //foward(200, 250); //左に傾ける
-      foward(200, 250); //左に傾ける
-    }
+
+    //PID制御
+    // if(duty == PID_taget)
+    // {
+    //   foward(230, 230); //正面に進む
+    // }
+    // else if(duty < PID_taget) //もし，targetよりも実測値が長かったら
+    // {
+    //   foward(250, 230); //右に傾ける
+    // }
+    // else
+    // {
+    //   foward(200, 250); //左に傾ける
+    // }
+
+
+
+    // if(LPF == target)
+    // {
+    //   foward(230, 230); //正面に進む
+    // }
+    // else if(LPF > target) //30cm以上なら
+    // {
+    //   //foward(250, 220); //右に傾ける
+    //   foward(250, 200); //右に傾ける
+    // }
+    // else
+    // {
+    //   //foward(200, 250); //左に傾ける
+    //   foward(200, 250); //左に傾ける
+    // }
+
 
     //階段がある箇所での処理
-    // if(dist > side_distance) //もし，2.0mよりも距離が大きくなったら．
+    // if(LPF > side_distance) //もし，2.0mよりも距離が大きくなったら．
     // {
     //   stop_(0,0);
       
@@ -258,7 +278,7 @@ void loop() {
     //   delay(2000);
     //   LiDAR();
 
-    //   if(dist > flont_distance) //もし，正面に障害物が無いなら
+    //   if(LPF > flont_distance) //もし，正面に障害物が無いなら
     //   {
     //     penDash(190); //左を向く
     //     servo_direction = "left";
@@ -267,14 +287,16 @@ void loop() {
 
     // }
 
+
   }
+
 
 
 
 
   // if(servo_direction == "left") //もし，サーボが左を向いていたら，
   // {
-  //   if(dist > target) //30cm以上なら
+  //   if(LPF > target) //30cm以上なら
   //   {
   //     foward(230, 255); //左に傾ける
   //   }
@@ -284,14 +306,14 @@ void loop() {
   //   }
 
   //   //階段がある箇所での処理
-  //   if(dist > side_distance) //もし，2.0mよりも距離が大きくなったら．
+  //   if(LPF > side_distance) //もし，2.0mよりも距離が大きくなったら．
   //   {
   //     stop_(0,0);
       
   //     penDash(95); //正面を向く
   //     delay(2000);
   //     LiDAR();
-  //     if(dist > flont_distance) //もし，正面に障害物が無いなら
+  //     if(LPF > flont_distance) //もし，正面に障害物が無いなら
   //     {
   //       penDash(20); //右を向く
   //       servo_direction = "right";
@@ -302,17 +324,20 @@ void loop() {
 
 
 
-  count++;
-
-
   Serial.print("target = ");
   Serial.print(target);
+  Serial.print("\t");
+  Serial.print("PID_taget = ");
+  Serial.print(PID_taget);
   Serial.print("\t");
   Serial.print("dist = ");
   Serial.print(dist);
   Serial.print("\t");
   Serial.print("LPF = ");
   Serial.print(LPF);
+  Serial.print("\t");
+  Serial.print("duty = ");
+  Serial.print(duty);
   Serial.print("\n");
 
 

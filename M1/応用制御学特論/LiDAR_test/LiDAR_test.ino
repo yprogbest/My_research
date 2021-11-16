@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 SoftwareSerial Serial1(12,11);
 
-int dist; //actual distance measurements of LiDAR
+float dist; //actual distance measurements of LiDAR
 int strength; //signal strength of LiDAR
 float temprature; 
 int check; //save check value
@@ -51,7 +51,7 @@ void loop() {
 
         if(uart[8]==(check&0xff))
         {
-          dist=uart[2]+uart[3]*256;
+          dist=float(uart[2]+uart[3]*256);
           
           strength=uart[4]+uart[5]*256;
           

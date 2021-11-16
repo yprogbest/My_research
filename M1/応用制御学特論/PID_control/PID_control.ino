@@ -3,7 +3,7 @@
 //LiDAR
 SoftwareSerial Serial1(12,11);
 
-int dist; //actual distance measurements of LiDAR
+float dist; //actual distance measurements of LiDAR
 int strength; //signal strength of LiDAR
 int temprature; 
 int check; //save check value
@@ -13,10 +13,10 @@ const int HEADER=0x59; //frame header of data package
 
 
 //PID制御(https://kurobekoblog.com/pid)
-#define target 30.0 //壁との距離 30cm
-#define Kp 15.0 //比例ゲイン
-#define Ki 50.0 //積分ゲイン
-#define Kd 0.3 //微分ゲイン
+#define target 40.0 //壁との距離 30cm
+#define Kp 5.0 //比例ゲイン
+#define Ki 0.0 //積分ゲイン
+#define Kd 0.0 //微分ゲイン
 
 int U;
 int duty = 0;
@@ -27,14 +27,10 @@ float P, I, D, preP;
 
 
 
-
-
-
-
-
-
-
-
+//ローパスフィルタ
+float LPF=0;
+float lastLPF=0;
+float k = 0.1;
 
 
 
@@ -62,7 +58,7 @@ void LiDAR()
 
         if(uart[8]==(check&0xff))
         {
-          dist=uart[2]+uart[3]*256;
+          dist=float(uart[2]+uart[3]*256);
           
           strength=uart[4]+uart[5]*256;
           
@@ -79,10 +75,16 @@ void LiDAR()
 }
 
 
-
-void PID()
+void raw_pass_filter() //https://garchiving.com/lpf-by-program/
 {
-  x = (float)dist;
+  LPF = (1 - k) * lastLPF + k * (float)dist;
+  lastLPF = LPF;
+}
+
+
+void PID(float Distance)
+{
+  x = Distance;
   
   dt = (micros() - preTime) / 1000000.0;
   preTime = micros();
@@ -112,8 +114,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   
   LiDAR();
-
-  PID();
+  raw_pass_filter();
+  
+  PID(LPF);
 
   Serial.print("target = ");
   Serial.print(target);
