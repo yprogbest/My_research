@@ -1,3 +1,7 @@
+//参考記事
+//P制御(https://monozukuri-c.com/mbase-pcontrol/)
+
+
 #include <SoftwareSerial.h>
 
 
@@ -5,9 +9,9 @@
 
 #define PID_taget 0.0 //PIDの目標値
 
-#define target 30.0 //壁との距離 30cm
+#define target 100.0 //壁との距離 100cm
 
-#define Kp 1.0 //比例ゲイン
+#define Kp 2.5 //比例ゲイン
 #define Ki 0.0 //積分ゲイン
 #define Kd 0.0 //微分ゲイン
 
@@ -19,13 +23,17 @@
 #define PIN_RIGHT_VREF 9
 
 //左
-#define PIN_LEFT_IN1 6
-#define PIN_LEFT_IN2 5
+#define PIN_LEFT_IN1 4
+#define PIN_LEFT_IN2 2
 #define PIN_LEFT_VREF 10
 
 //DCモータのスピード
 int left_Speed;
 int right_Speed;
+
+//最大と最小のスピードを指定
+int High_Speed = 255;
+int Low_Speed = 220;
 
 
 //サーボモータ
@@ -46,8 +54,9 @@ const int HEADER=0x59; //frame header of data package
 
 
 //ローパスフィルタ
-float LPF, lastLPF;
-float k = 0.5;
+float LPF;
+float lastLPF;
+float k = 0.1;
 
 
 
@@ -197,9 +206,9 @@ void PID(float Distance)
 
   duty += Kp * P + Ki * I + Kd * D;
 
-  if(duty<-10) duty = -5;
-  if(duty>10) duty = 5;
-
+  //if(duty<-10) duty = -10;
+  //if(duty>10) duty = 10;
+  
 }
 
 
@@ -207,6 +216,7 @@ void PID(float Distance)
 
 void setup() {
   // put your setup code here, to run once:
+
   //サーボモータ
   pinMode(penguin,OUTPUT);
   //タイヤ
@@ -214,6 +224,7 @@ void setup() {
   pinMode(PIN_RIGHT_IN2,OUTPUT); 
   pinMode(PIN_LEFT_IN1,OUTPUT); 
   pinMode(PIN_LEFT_IN2,OUTPUT); 
+  
   //LiDAR
   Serial.begin(9600);
   Serial1.begin(115200);
@@ -221,7 +232,7 @@ void setup() {
 
   penDash(20); //0°
   servo_direction = "right";
-  delay(10000);
+  delay(5000);
 }
 
 
@@ -237,18 +248,34 @@ void loop() {
   if(servo_direction == "right") //もし，サーボが右を向いていたら，
   {
 
-    //PID制御
+
+    foward(int((float(High_Speed-Low_Speed)/200.0)*LPF+Low_Speed), int((float(Low_Speed-High_Speed)/200.0)*LPF+High_Speed)); //正面に進む
+
+
+    // if(LPF<100)
+    // {
+    //   penDash(55); //45°傾ける
+    // }else
+    // {
+    //   penDash(20); //0°傾ける
+    // }
+
+    
+
+    //PID制御    
     // if(duty == PID_taget)
     // {
-    //   foward(230, 230); //正面に進む
+    //   foward(222, 222); //正面に進む
     // }
     // else if(duty < PID_taget) //もし，targetよりも実測値が長かったら
     // {
-    //   foward(250, 230); //右に傾ける
+    //   foward(240, 190); //右に傾ける
+    //   //foward(int(0.325*LPF+190), int(-2.225*LPF+445)); //右に傾ける
     // }
     // else
     // {
-    //   foward(200, 250); //左に傾ける
+    //   foward(190,240); //左に傾ける
+    //   //foward(int(0.325*LPF+190), int(-0.325*LPF+255)); //左に傾ける
     // }
 
 
@@ -324,21 +351,21 @@ void loop() {
 
 
 
-  Serial.print("target = ");
-  Serial.print(target);
-  Serial.print("\t");
-  Serial.print("PID_taget = ");
-  Serial.print(PID_taget);
-  Serial.print("\t");
-  Serial.print("dist = ");
-  Serial.print(dist);
-  Serial.print("\t");
-  Serial.print("LPF = ");
-  Serial.print(LPF);
-  Serial.print("\t");
-  Serial.print("duty = ");
-  Serial.print(duty);
-  Serial.print("\n");
+  //Serial.print("target = ");
+  //Serial.print(target);
+  //Serial.print("\t");
+  //Serial.print("PID_taget = ");
+  //Serial.print(PID_taget);
+  //Serial.print("\t");
+  //Serial.print("dist = ");
+  //Serial.print(dist);
+  //Serial.print("\t");
+  //Serial.print("LPF = ");
+  //Serial.print(LPF);
+  //Serial.print("\t");
+  //Serial.print("duty = ");
+  //Serial.print(duty);
+  //Serial.print("\n");
 
 
 
