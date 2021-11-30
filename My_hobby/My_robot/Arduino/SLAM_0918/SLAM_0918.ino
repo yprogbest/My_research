@@ -10,7 +10,7 @@
 #define speedPinR 9
 
 //default speed 
-const int default_vel = 255;
+const int default_vel = 220;
 
 
 void go_Forward(const size_t speed)
@@ -106,24 +106,24 @@ void cmd_vel_cb(const geometry_msgs::Twist &msg)
   const float x = msg.linear.x;
   const float z_rotation = msg.angular.z;
 
-  if(x < 0.0 && z_rotation == 0.0)
+  if(x > 0.0 && z_rotation == 0.0)
   {
     // Go forward
     go_Forward(default_vel);
   }
-  else if(x > 0.0 && z_rotation == 0.0)
+  else if(x < 0.0 && z_rotation == 0.0)
   {
     // Go back
     go_Back(default_vel);
   }
-  else if(z_rotation < 0.0)
+  else if(z_rotation > 0.0)
   {
     if(x == 0.0)
     {
       //Turn left
       go_Left(default_vel);
     }
-    else if(x < 0.0)
+    else if(x > 0.0)
     {
       // Go left forward
       go_Forward_Left(default_vel);
@@ -134,14 +134,14 @@ void cmd_vel_cb(const geometry_msgs::Twist &msg)
       go_Back_Right(default_vel);
     }
   }
-  else if(z_rotation > 0.0)
+  else if(z_rotation < 0.0)
   {
     if(x == 0.0)
     {
       // Turn right
       go_Right(default_vel);
     }
-    else if(x < 0.0)
+    else if(x > 0.0)
     {
       // Go right forward
       go_Forward_Right(default_vel);
