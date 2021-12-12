@@ -1,4 +1,3 @@
-//https://www.petitmonte.com/robot/motor_driver_ta7291p.html
 //右
 #define PIN_RIGHT_IN1 7
 #define PIN_RIGHT_IN2 8

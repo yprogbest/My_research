@@ -32,8 +32,10 @@ int left_Speed;
 int right_Speed;
 
 //最大と最小のスピードを指定
-#define High_Speed 255
-#define Low_Speed 220
+// #define High_Speed 255
+// #define Low_Speed 220
+#define High_Speed 200
+#define Low_Speed 180
 
 
 //サーボモータ
@@ -197,10 +199,10 @@ void LiDAR()
         {
           dist = float(uart[2] + uart[3] * 256);
 
-          strength = uart[4] + uart[5] * 256;
+          //strength = uart[4] + uart[5] * 256;
 
-          temprature = uart[6] + uart[7] * 256;
-          temprature = temprature / 8 - 256;
+          //temprature = uart[6] + uart[7] * 256;
+          //temprature = temprature / 8 - 256;
         }
       }
     }
@@ -236,7 +238,7 @@ void ultrasound_left()
 
 void ultrasound_right()
 {
- 
+
   digitalWrite( TRIG_right, HIGH );
   delayMicroseconds( 10 );
   digitalWrite( TRIG_right, LOW );
@@ -331,19 +333,20 @@ void loop() {
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
 
-
-    foward(int((float(High_Speed - Low_Speed) / 200.0)*LPF_LiDAR + Low_Speed), int((float(Low_Speed - High_Speed) / 200.0)*LPF_LiDAR + High_Speed)); //正面に進む
-
     ultrasound_right();
     raw_pass_filter(dist_ultra_right, 0.1, LPF_ultra_right);
 
-    //超音波センサの距離 = LiDARの距離 - 4cm
-    LPF_ultra_right = LPF_LiDAR - 4.0;
+    LPF_ultra_right = LPF_ultra_right + 0.4;
 
-    if (LPF_ultra_right > LPF_LiDAR)
-    {
-      foward(Low_Speed, High_Speed);
-    }
+
+    foward(int((float(High_Speed - Low_Speed) / 200.0)*LPF_LiDAR + Low_Speed), int((float(Low_Speed - High_Speed) / 200.0)*LPF_LiDAR + High_Speed)); //正面に進む
+
+
+    //もし，超音波の距離がLiDARの距離+4cmより長い時
+    // if (LPF_ultra_right > LPF_LiDAR + 4.0)
+    // {
+    //   foward(Low_Speed, High_Speed);
+    // }
 
 
 

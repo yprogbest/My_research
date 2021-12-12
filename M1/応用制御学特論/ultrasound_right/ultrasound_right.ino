@@ -25,7 +25,7 @@ SoftwareSerial Serial1(12,11);
 
 float dist; //actual distance measurements of LiDAR
 int strength; //signal strength of LiDAR
-float temprature; 
+int temprature; 
 int check; //save check value
 int i;
 int uart[9]; //save data measured by LiDAR
@@ -36,7 +36,7 @@ const int HEADER=0x59; //frame header of data package
 
 void raw_pass_filter(float Distance, float k, float &lpf) //https://garchiving.com/lpf-by-program/
 {
-  float lastLPF=0.0;
+  float lastLPF;
 
   lpf = (1 - k) * lastLPF + k * Distance;
   lastLPF = lpf;
@@ -83,10 +83,10 @@ void LiDAR()
         {
           dist = float(uart[2]+uart[3]*256);
           
-          strength=uart[4]+uart[5]*256;
+          //strength=uart[4]+uart[5]*256;
           
-          temprature=uart[6]+uart[7]*256;
-          temprature=temprature/8-256;
+          //temprature=uart[6]+uart[7]*256;
+          //temprature=temprature/8-256;
         }
       }
     }

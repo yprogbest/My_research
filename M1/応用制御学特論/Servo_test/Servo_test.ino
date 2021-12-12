@@ -19,7 +19,10 @@ void loop() {
   penguin.write(180);
   delay(1000);
   penguin.write(90);//120度まで
-
+  delay(1000);
+  penguin.write(0);//0度の位置まで回転
+  
+  
   while(1){
 
   }

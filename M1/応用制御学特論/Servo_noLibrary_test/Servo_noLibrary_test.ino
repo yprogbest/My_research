@@ -9,14 +9,14 @@ void loop()
 {
     penDash(20); //0
     delay(2000);
-    penDash(95); //90
-    delay(2000);
-    penDash(190); //180
-    delay(2000);
-    penDash(95); //90
-    delay(2000);
-    penDash(20); //0
-    delay(2000);
+    //penDash(95); //90
+    //delay(2000);
+    //penDash(190); //180
+    //delay(2000);
+    //penDash(95); //90
+    //delay(2000);
+    //penDash(20); //0
+    //delay(2000);
     
     while(1)
   {
