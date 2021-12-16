@@ -17,7 +17,7 @@
 - [Report](https://github.com/yuki-research/My_research/files/7260018/Paper.template-Tri-U.2021_masuda_new.pdf)
 - [Poster](https://github.com/yuki-research/My_research/files/7260019/poster_masuda.pdf)
 
-I joind the 27th Tri-U international joint seminar and symposium online, and presentated my previous research which is for my final report of bachlor's degree.
+I joined the 27th Tri-U international joint seminar and symposium online, and presentated my previous research which is for my final report of bachlor's degree.
 
 
 #### 2. Mask R-CNNとLiDAR点群を用いた作業空間内物体追跡(10/15)
