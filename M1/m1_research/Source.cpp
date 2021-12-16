@@ -86,6 +86,8 @@ int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate_obj1, 
 //int gnuplot_mapping(FILE * gid, vector<vector<Point3f>>all_max_coordinate); //gnuplot 修正前
 int output_to_textfile(FILE *output_textfile, vector<vector<Point3f>>all_max_coordinate_obj1, vector<vector<Point3f>>all_max_coordinate_obj2);
 int remap_stereo();
+int AllImage_to_EachImage();
+
 
 
 
@@ -131,6 +133,9 @@ void main(int argc, const char* argv[])
 				remap_stereo();
 				break;
 
+			case 6:
+				AllImage_to_EachImage();
+				break;
 
 
 			case 0:
@@ -155,7 +160,8 @@ void menu_screen()
 	printf("<<3>>:YOLOの認識結果のファイルを1フレームごと保存\n");
 	printf("<<4>>:【メイン】物体追跡\n");
 	printf("<<5>>:ステレオ画像から動画を作成（remap込み）\n");
-	printf("<<6>>:○○\n");
+	printf("<<6>>:ステレオ画像を右と左に分けて保存\n");
+	printf("<<7>>:○○\n");
 	printf("<<0>>:終了します．\n");
 	printf("----------------------------------------------------\n");
 	printf("\n");
@@ -2671,7 +2677,7 @@ std::tuple<vector<vector<float>>, vector<vector<Point3f>>> gather_representive_p
 	//diff_distanceが最も最小になる値を取得するために用意
 	float min_diff_distance;
 
-	float threhold = 3.0;
+	float threhold = 5.0;
 	
 
 
@@ -2981,7 +2987,7 @@ int remap_stereo()
 {
 
 	int start_num = 0;
-	int end_num = 292;
+	int end_num = 1196;
 
 	string sFilePath_stereo_calibration_parameters;
 	string image_name;
@@ -3063,7 +3069,7 @@ int remap_stereo()
 
 		initUndistortRectifyMap(K1, D1, R1, P1, IM_SIZE, CV_16SC2, map11, map12);
 
-		image_name = image_folder + "/result_stereimage_" + std::to_string(num) + ".png";
+		image_name = image_folder + "/result_stereoimage_" + std::to_string(num) + ".png";
 
 		std::cout << image_name << std::endl;
 
@@ -3091,3 +3097,85 @@ int remap_stereo()
 }
 
 
+
+
+//ステレオカメラの左と右の結果をそれぞれ出力
+int AllImage_to_EachImage()
+{
+	int start, goal;
+
+	//読み込む画像のファイルパスを指定
+	std::cout << "Path name of the image file to be loaded = " << std::endl;
+
+
+	std::string image_file_path;
+	std::cin >> image_file_path;
+
+
+
+	//ファイルの始めと終わりを指定
+	std::cout << "File Start Number = " << std::endl;
+	std::cin >> start;
+
+	std::cout << "File Goal Number = " << std::endl;
+	std::cin >> goal;
+
+
+
+
+	//保存先のパス名を指定（左）
+	std::cout << "Destination path name (Left) = " << std::endl;
+
+	std::string destination_file_path_left;
+	std::cin >> destination_file_path_left;
+
+
+
+
+	//保存先のパス名を指定（右）
+	std::cout << "Destination path name (Right) = " << std::endl;
+
+	std::string destination_file_path_right;
+	std::cin >> destination_file_path_right;
+
+
+
+
+	for (int i = start; i <= goal; i++)
+	{
+
+
+		Mat img = imread(image_file_path + "/image" + std::to_string(i) + ".png");
+
+
+
+
+		//ステレオ画像を右と左で分割
+		Mat img_cam_left = img(cv::Rect(0, 0, img.cols / 2, img.rows));
+		Mat img_cam_right = img(cv::Rect(img.cols / 2, 0, img.cols / 2, img.rows));
+
+
+		if ((img_cam_left.empty()) || (img_cam_right.empty()))
+		{
+			std::cerr << "Error!!" << std::endl;
+
+			return -1;
+		}
+
+
+
+		std::string left_image_name = destination_file_path_left + "/image" + std::to_string(i) + ".png";
+		cv::imwrite(left_image_name, img_cam_left);
+
+		std::string right_image_name = destination_file_path_right + "/image" + std::to_string(i) + ".png";
+		cv::imwrite(right_image_name, img_cam_right);
+
+
+		std::cout << i << std::endl;
+	}
+
+
+	std::cout << "OK" << std::endl;
+
+	return 0;
+}
