@@ -108,9 +108,6 @@ def main():
 
         cap_right = cv2.VideoCapture(args.rightimg)
 
-        output_movie_name = "./image_to_movie/stereo_PSMNET.mov"
-        output_movie = cv2.VideoWriter(output_movie_name, cv2.VideoWriter_fourcc(*'MP4V'), 30.0, (1280, 720))
-
 
 
         while(cap_left.isOpened() and cap_right.isOpened()):
@@ -161,16 +158,11 @@ def main():
                 img = pred_disp[top_pad:,:]
             else:
                 img = pred_disp
-            
-            img = (img*256).astype('uint8')
+        
+
+            img = (img*256).astype('uint16')
             img = Image.fromarray(img)
-
-            #img = pil_to_cv2(img)
-            #output_movie.write(img)
-
-            img = np.array(img)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            output_movie.write(img)
+            img.save('./disp_image_PSMNet/image' + str(frame_count) + ".png")
 
 
             output_file = open('output_pred_disp/output_pred_disp' + str(frame_count) + '.txt', 'w')
@@ -185,7 +177,7 @@ def main():
 
             output_file.close
 
-            print(pred_disp)
+            #print(pred_disp)
 
 
             frame_count = frame_count + 1
@@ -196,9 +188,3 @@ def main():
 
 if __name__ == '__main__':
    main()
-
-
-
-
-
-
