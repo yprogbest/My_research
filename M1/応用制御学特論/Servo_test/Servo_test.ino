@@ -12,15 +12,15 @@ void loop() {
 
   
  // put your main code here, to run repeatedly:
-  penguin.write(0);//0度の位置まで回転
+  //penguin.write(0);//0度の位置まで回転
+  //delay(1000);
+  penguin.write(55);//120度まで
   delay(1000);
-  penguin.write(90);//120度まで
+  penguin.write(145);
   delay(1000);
-  penguin.write(180);
-  delay(1000);
-  penguin.write(90);//120度まで
-  delay(1000);
-  penguin.write(0);//0度の位置まで回転
+  //penguin.write(90);//120度まで
+  //delay(1000);
+  //penguin.write(0);//0度の位置まで回転
   
   
   while(1){
