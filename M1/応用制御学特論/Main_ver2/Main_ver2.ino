@@ -5,6 +5,14 @@
 #include <SoftwareSerial.h>
 
 
+
+
+//曲がり角の処理
+float wall_distant = 300.0; // cm
+
+
+
+
 //PID制御(https://kurobekoblog.com/pid)
 
 #define PID_taget 0.0 //PIDの目標値
@@ -79,10 +87,6 @@ double duration_right = 0;
 double dist_ultra_right = 0;
 double speed_of_sound_right = 331.5 + 0.6 * ultra_temp;
 
-
-
-#define flont_distance 600 //正面との距離
-#define side_distance 200 //左右との距離
 
 
 //ローパスフィルタ（LiDAR）
@@ -315,8 +319,8 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(55); //45°
-  servo_direction = "right";
+  penDash(145); //45°
+  servo_direction = "left";
   delay(5000);
 }
 
@@ -325,60 +329,60 @@ void setup() {
 
 void loop() {
 
-  int left_tire, right_tire;
+  int left_tire_R, right_tire_R; //右側の壁に沿って走行
+  int left_tire_L, right_tire_L; //左の壁に沿って走行
 
 
-  left_tire = int((float(High_Speed - Low_Speed) / 200.0)*dist + Low_Speed);
-  right_tire = int((float(Low_Speed - High_Speed) / 200.0)*dist + High_Speed);
+  left_tire_R = int((float(High_Speed - Low_Speed) / 200.0)*dist + Low_Speed);
+  right_tire_R = int((float(Low_Speed - High_Speed) / 200.0)*dist + High_Speed);
+
+  left_tire_L = int((float(Low_Speed - High_Speed) / 200.0)*dist + High_Speed);
+  right_tire_L = int((float(High_Speed - Low_Speed) / 200.0)*dist + Low_Speed);
 
 
-  LiDAR();
-
-
-  // LiDAR　ローパスフィルタ
-  // raw_pass_filter(dist_lidar, 0.1, LPF_LiDAR);
 
 
 
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
 
-    //foward(int((float(High_Speed - Low_Speed) / 200.0)*LPF_LiDAR + Low_Speed), int((float(Low_Speed - High_Speed) / 200.0)*LPF_LiDAR + High_Speed)); //正面に進む
-    foward(left_tire, right_tire); //正面に進む
+    LiDAR();
+
+    foward(left_tire_R, right_tire_R); //正面に進む
+
+
+    if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
+    {
+      
+      foward(190, 255);
+      delay(1000);
+      foward(255,255);
+      delay(3000);
+
+      penDash(145); //135°
+
+      servo_direction = "left";
+    }
 
   }
 
 
 
+  if(servo_direction == "left") //もし，サーボが左を向いていたら，
+  {
+
+    LiDAR();
+
+    foward(left_tire_L, right_tire_L); //正面に進む
 
 
-  // if(servo_direction == "left") //もし，サーボが左を向いていたら，
-  // {
-  //   if(LPF_LiDAR > target) //30cm以上なら
-  //   {
-  //     foward(230, 255); //左に傾ける
-  //   }
-  //   else
-  //   {
-  //     foward(255, 230); //右に傾ける
-  //   }
+    if(dist > wall_distant)
+    {
+      foward(190, 255);
+      delay(1000);
+    }
 
-  //   //階段がある箇所での処理
-  //   if(LPF_LiDAR > side_distance) //もし，2.0mよりも距離が大きくなったら．
-  //   {
-  //     stop_(0,0);
-
-  //     penDash(95); //正面を向く
-  //     delay(2000);
-  //     LiDAR();
-  //     if(LPF_LiDAR > flont_distance) //もし，正面に障害物が無いなら
-  //     {
-  //       penDash(20); //右を向く
-  //       servo_direction = "right";
-  //       delay(2000);
-  //     }
-  //   }
-  // }
+  }
 
 
 
@@ -389,9 +393,9 @@ void loop() {
   //Serial.print("PID_taget = ");
   //Serial.print(PID_taget);
   //Serial.print("\t");
-  // Serial.print("dist = ");
-  // Serial.print(dist);
-  // Serial.print("\t");
+  Serial.print("dist = ");
+  Serial.print(dist);
+  Serial.print("\t");
   // Serial.print("LPF_LiDAR = ");
   // Serial.print(LPF_LiDAR);
   // Serial.print("\n");
@@ -411,14 +415,14 @@ void loop() {
 
 
 
-  // Serial.print("left_tire = ");
-  // Serial.print(left_tire);
-  // Serial.print("\t");
+  Serial.print("left_tire_R = ");
+  Serial.print(left_tire_R);
+  Serial.print("\t");
 
 
-  // Serial.print("right_tire = ");
-  // Serial.print(right_tire);
-  // Serial.print("\n");
+  Serial.print("right_tire_R = ");
+  Serial.print(right_tire_R);
+  Serial.print("\n");
 
 
 
