@@ -10,6 +10,8 @@
 //曲がり角の処理
 float wall_distant = 300.0; // cm
 
+int count_servo = 0;
+
 
 
 
@@ -42,8 +44,8 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
-#define High_Speed 250
-#define Low_Speed 180
+#define High_Speed 230
+#define Low_Speed 170
 
 
 //サーボモータ
@@ -319,8 +321,8 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(145); //45°
-  servo_direction = "left";
+  penDash(55); //45°
+  servo_direction = "right";
   delay(5000);
 }
 
@@ -354,12 +356,7 @@ void loop() {
     if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
       
-      foward(190, 255);
-      delay(1000);
-      foward(255,255);
-      delay(3000);
-
-      penDash(145); //135°
+      left(200, 200);
 
       servo_direction = "left";
     }
@@ -371,19 +368,23 @@ void loop() {
   if(servo_direction == "left") //もし，サーボが左を向いていたら，
   {
 
-    LiDAR();
-
-    foward(left_tire_L, right_tire_L); //正面に進む
-
-
     if(dist > wall_distant)
     {
-      foward(190, 255);
-      delay(1000);
+      left(200, 200);
+      //delay(1000);
     }
 
-  }
+    penDash(145); //135°
 
+    LiDAR();
+
+    foward(left_tire_L, right_tire_L); //正面に進む 
+
+  }
+ 
+
+
+  // Serial.println(servo_direction);
 
 
 
@@ -393,9 +394,9 @@ void loop() {
   //Serial.print("PID_taget = ");
   //Serial.print(PID_taget);
   //Serial.print("\t");
-  Serial.print("dist = ");
-  Serial.print(dist);
-  Serial.print("\t");
+  // Serial.print("dist = ");
+  // Serial.print(dist);
+  // Serial.print("\n");
   // Serial.print("LPF_LiDAR = ");
   // Serial.print(LPF_LiDAR);
   // Serial.print("\n");
@@ -415,14 +416,14 @@ void loop() {
 
 
 
-  Serial.print("left_tire_R = ");
-  Serial.print(left_tire_R);
-  Serial.print("\t");
+  // Serial.print("left_tire_R = ");
+  // Serial.print(left_tire_R);
+  // Serial.print("\t");
 
 
-  Serial.print("right_tire_R = ");
-  Serial.print(right_tire_R);
-  Serial.print("\n");
+  // Serial.print("right_tire_R = ");
+  // Serial.print(right_tire_R);
+  // Serial.print("\n");
 
 
 
