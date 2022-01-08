@@ -356,7 +356,7 @@ void loop() {
     if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
       
-      left(200, 200);
+      left(210, 210);
 
       servo_direction = "left";
     }
@@ -370,7 +370,7 @@ void loop() {
 
     if(dist > wall_distant)
     {
-      left(200, 200);
+      left(210, 210);
       //delay(1000);
     }
 
