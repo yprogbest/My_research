@@ -44,7 +44,7 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
-#define High_Speed 200
+#define High_Speed 210
 #define Low_Speed 170
 
 
@@ -324,6 +324,9 @@ void setup() {
   penDash(55); //45°
   servo_direction = "right";
   delay(5000);
+  
+  LiDAR();
+  
 }
 
 
