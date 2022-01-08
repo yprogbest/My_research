@@ -44,7 +44,7 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
-#define High_Speed 230
+#define High_Speed 200
 #define Low_Speed 170
 
 
