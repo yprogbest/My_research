@@ -2,12 +2,13 @@
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
 
-#define LeftMotorDirPin2 8
-#define LeftMotorDirPin1 7
-#define speedPinL 6
-#define RightMotorDirPin2 11
+
 #define RightMotorDirPin1 12
+#define RightMotorDirPin2 11
 #define speedPinR 9
+#define LeftMotorDirPin1 7
+#define LeftMotorDirPin2 8
+#define speedPinL 6
 
 //default speed 
 const int default_vel = 220;
@@ -17,8 +18,8 @@ void go_Forward(const size_t speed)
 {
   digitalWrite(RightMotorDirPin1,HIGH);
   digitalWrite(RightMotorDirPin2,LOW);
-  digitalWrite(RightMotorDirPin1,HIGH);
-  digitalWrite(RightMotorDirPin2,LOW);
+  digitalWrite(LeftMotorDirPin1,HIGH);
+  digitalWrite(LeftMotorDirPin2,LOW);
   analogWrite(speedPinL, speed);
   analogWrite(speedPinR, speed);
 }
@@ -151,6 +152,11 @@ void cmd_vel_cb(const geometry_msgs::Twist &msg)
       // Go left back
       go_Back_Left(default_vel);
     }
+  }
+
+  if(x == 0.0 && z_rotation == 0.0)
+  {
+    Stop();
   }
 }
 
