@@ -12,3 +12,11 @@ delay(2000);
   
 penDash(20); //0‹
 delay(2000);
+
+
+penDash(50); //45‹
+delay(2000);
+
+
+penDash(145); //135‹
+delay(2000);
