@@ -321,7 +321,7 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(55); //45°
+  penDash(48); //45°
   servo_direction = "right";
   delay(5000);
   
@@ -377,7 +377,7 @@ void loop() {
       //delay(1000);
     }
 
-    penDash(145); //135°
+    penDash(150); //135°
 
     LiDAR();
 
