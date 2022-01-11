@@ -10,7 +10,8 @@
 //曲がり角の処理
 float wall_distant = 300.0; // cm
 
-int count_servo = 0;
+
+int corner_count = 0;
 
 
 
@@ -321,7 +322,7 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(48); //45°
+  penDash(55); //45°
   servo_direction = "right";
   delay(5000);
   
@@ -361,8 +362,15 @@ void loop() {
       
       left(220, 220);
 
-      servo_direction = "left";
+      if(corner_count > 2)
+      {
+        servo_direction = "left";
+      }
+
+      corner_count++;
+
     }
+
 
   }
 
@@ -374,11 +382,10 @@ void loop() {
     if(dist > wall_distant)
     {
       left(220, 220);
-      //delay(1000);
     }
 
     penDash(150); //135°
-
+    
     LiDAR();
 
     foward(left_tire_L, right_tire_L); //正面に進む 
