@@ -360,7 +360,6 @@ void loop() {
 
       servo_direction = "left";
 
-      corner_count++;
     }
 
 
@@ -374,6 +373,8 @@ void loop() {
     if(dist > wall_distant)
     {
       left(220, 220);
+
+      corner_count++;
     }
 
     if(corner_count == 1)
