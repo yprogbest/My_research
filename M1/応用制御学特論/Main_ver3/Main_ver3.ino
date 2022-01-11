@@ -6,14 +6,10 @@
 
 
 
-
 //曲がり角の処理
 float wall_distant = 300.0; // cm
 
-
 int corner_count = 0;
-
-
 
 
 //PID制御(https://kurobekoblog.com/pid)
@@ -322,8 +318,8 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(55); //45°
-  servo_direction = "right";
+  penDash(145); //135°
+  servo_direction = "left";
   delay(5000);
   
   LiDAR();
@@ -362,13 +358,9 @@ void loop() {
       
       left(220, 220);
 
-      if(corner_count > 2)
-      {
-        servo_direction = "left";
-      }
+      servo_direction = "left";
 
       corner_count++;
-
     }
 
 
@@ -384,7 +376,17 @@ void loop() {
       left(220, 220);
     }
 
-    penDash(150); //135°
+    if(corner_count == 1)
+    {
+      penDash(48); //45°
+
+      servo_direction = "right";
+    }
+
+    if(servo_direction == "left")
+    {
+      penDash(145); //135°
+    }
     
     LiDAR();
 
