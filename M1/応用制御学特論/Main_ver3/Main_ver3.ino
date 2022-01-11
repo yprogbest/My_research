@@ -347,22 +347,19 @@ void loop() {
 
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
-
     LiDAR();
-
-    foward(left_tire_R, right_tire_R); //正面に進む
-
 
     if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
-      
+
       left(220, 220);
 
       servo_direction = "left";
-
     }
 
+    foward(left_tire_R, right_tire_R); //正面に進む
 
+    penDash(48); //45°
   }
 
 
@@ -377,27 +374,22 @@ void loop() {
       corner_count++;
     }
 
-    if(corner_count == 1)
+    if(corner_count >= 1 && corner_count <= 50)
     {
-      penDash(48); //45°
-
       servo_direction = "right";
     }
 
     if(servo_direction == "left")
     {
+      LiDAR();
       penDash(145); //135°
+      foward(left_tire_L, right_tire_L); //正面に進む 
     }
-    
-    LiDAR();
-
-    foward(left_tire_L, right_tire_L); //正面に進む 
-
   }
  
 
 
-  // Serial.println(servo_direction);
+  Serial.println(servo_direction);
 
 
 
@@ -407,9 +399,9 @@ void loop() {
   //Serial.print("PID_taget = ");
   //Serial.print(PID_taget);
   //Serial.print("\t");
-  // Serial.print("dist = ");
-  // Serial.print(dist);
-  // Serial.print("\n");
+  Serial.print("dist = ");
+  Serial.print(dist);
+  Serial.print("\t");
   // Serial.print("LPF_LiDAR = ");
   // Serial.print(LPF_LiDAR);
   // Serial.print("\n");
@@ -439,5 +431,8 @@ void loop() {
   // Serial.print("\n");
 
 
+  Serial.print("corner_count = ");
+  Serial.print(corner_count);
+  Serial.print("\n");
 
 }
