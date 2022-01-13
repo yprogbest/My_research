@@ -11,6 +11,10 @@ float wall_distant = 300.0; // cm
 
 int corner_count = 0;
 
+//サーボモータの傾き
+int servo_right_curve = 47; //45°付近
+int servo_left_curve = 155; //135°付近
+
 
 //PID制御(https://kurobekoblog.com/pid)
 
@@ -318,7 +322,7 @@ void setup() {
   pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(145); //135°
+  penDash(servo_left_curve); //135°
   servo_direction = "left";
   delay(5000);
   
@@ -349,6 +353,11 @@ void loop() {
   {
     LiDAR();
 
+    foward(left_tire_R, right_tire_R); //正面に進む
+
+    penDash(servo_right_curve); //45°
+
+
     if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
 
@@ -357,9 +366,6 @@ void loop() {
       servo_direction = "left";
     }
 
-    foward(left_tire_R, right_tire_R); //正面に進む
-
-    penDash(48); //45°
   }
 
 
@@ -375,7 +381,7 @@ void loop() {
     }
 
 
-    if(corner_count >= 80 && corner_count <= 100)
+    if(corner_count >= 50 && corner_count <= 130)
     {
       servo_direction = "right";
     }
@@ -384,7 +390,7 @@ void loop() {
     if(servo_direction == "left")
     {
       LiDAR();
-      penDash(145); //135°
+      penDash(servo_left_curve); //135°
       foward(left_tire_L, right_tire_L); //正面に進む 
     }
   }
