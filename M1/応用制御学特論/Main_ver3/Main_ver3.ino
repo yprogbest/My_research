@@ -352,7 +352,7 @@ void loop() {
     if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
 
-      left(220, 220);
+      left(200, 200);
 
       servo_direction = "left";
     }
@@ -369,15 +369,17 @@ void loop() {
 
     if(dist > wall_distant)
     {
-      left(220, 220);
+      left(200, 200);
 
       corner_count++;
     }
 
-    if(corner_count >= 1 && corner_count <= 50)
+
+    if(corner_count >= 80 && corner_count <= 100)
     {
       servo_direction = "right";
     }
+
 
     if(servo_direction == "left")
     {
@@ -389,7 +391,7 @@ void loop() {
  
 
 
-  Serial.println(servo_direction);
+  // Serial.println(servo_direction);
 
 
 
@@ -399,9 +401,9 @@ void loop() {
   //Serial.print("PID_taget = ");
   //Serial.print(PID_taget);
   //Serial.print("\t");
-  Serial.print("dist = ");
-  Serial.print(dist);
-  Serial.print("\t");
+  // Serial.print("dist = ");
+  // Serial.print(dist);
+  // Serial.print("\t");
   // Serial.print("LPF_LiDAR = ");
   // Serial.print(LPF_LiDAR);
   // Serial.print("\n");
@@ -431,8 +433,8 @@ void loop() {
   // Serial.print("\n");
 
 
-  Serial.print("corner_count = ");
-  Serial.print(corner_count);
-  Serial.print("\n");
+  // Serial.print("corner_count = ");
+  // Serial.print(corner_count);
+  // Serial.print("\n");
 
 }
