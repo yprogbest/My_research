@@ -9,7 +9,10 @@
 //曲がり角の処理
 float wall_distant = 300.0; // cm
 
-int corner_count = 0;
+// int corner_count = 0;
+int flag_right=0;
+int frame_count = 0;
+
 
 //サーボモータの傾き
 int servo_right_curve = 47; //45°付近
@@ -45,8 +48,8 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
-#define High_Speed 205
-#define Low_Speed 170
+#define High_Speed 200
+#define Low_Speed 180
 
 
 //サーボモータ
@@ -347,18 +350,69 @@ void loop() {
 
 
 
+  if(servo_direction == "left") //もし，サーボが左を向いていたら，
+  {
+    
+    LiDAR();
+
+    if(dist >= wall_distant)
+    {
+      left(200, 200);
+
+      // corner_count++;
+
+      if(flag_right == -1)
+      {
+        flag_right = -1;
+      }
+      else
+      {
+        flag_right=1;
+      }
+
+      frame_count = 0;
+    }
+
+
+    // if(corner_count >= 50 && corner_count <= 100)
+    // {
+    //   servo_direction = "right";
+    // }
+
+
+    if(flag_right == 1)
+    {
+      if(dist<wall_distant)
+      {
+        frame_count++;
+
+        if(frame_count == 400) //100回，壁との距離が3m以内なら，
+        {
+          servo_direction = "right";
+        }
+      }
+
+    }
+
+
+    if(servo_direction == "left")
+    {
+      penDash(servo_left_curve); //135°
+      LiDAR();
+      foward(left_tire_L, right_tire_L); //正面に進む 
+    }
+
+  }
+
 
 
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
+    penDash(servo_right_curve); //45°
     LiDAR();
-
     foward(left_tire_R, right_tire_R); //正面に進む
 
-    penDash(servo_right_curve); //45°
-
-
-    if(dist > wall_distant) //壁との距離が遠くなったら（曲がり角）
+    if(dist >= wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
 
       left(200, 200);
@@ -366,34 +420,11 @@ void loop() {
       servo_direction = "left";
     }
 
+
+    flag_right = -1;
+
   }
 
-
-
-  if(servo_direction == "left") //もし，サーボが左を向いていたら，
-  {
-
-    if(dist > wall_distant)
-    {
-      left(200, 200);
-
-      corner_count++;
-    }
-
-
-    if(corner_count >= 50 && corner_count <= 130)
-    {
-      servo_direction = "right";
-    }
-
-
-    if(servo_direction == "left")
-    {
-      LiDAR();
-      penDash(servo_left_curve); //135°
-      foward(left_tire_L, right_tire_L); //正面に進む 
-    }
-  }
  
 
 
@@ -439,8 +470,13 @@ void loop() {
   // Serial.print("\n");
 
 
-  // Serial.print("corner_count = ");
-  // Serial.print(corner_count);
+  // Serial.print("flag_right = ");
+  // Serial.print(flag_right);
+  // Serial.print("\t");
+
+
+  // Serial.print("frame_count = ");
+  // Serial.print(frame_count);
   // Serial.print("\n");
 
 }
