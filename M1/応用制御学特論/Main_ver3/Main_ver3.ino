@@ -4,22 +4,29 @@
 
 #include <SoftwareSerial.h>
 
+// https://garchiving.com/pwm-control-with-arduino/
+// https://qiita.com/thorikawa/items/a6377d2d4b4535dd9004
+#include <VarSpeedServo.h>
+
+VarSpeedServo penguin;
+
+
 int sometime;
 
 //曲がり角の処理
-float wall_distant = 300.0; // cm
+#define wall_distant  300 // cm
 
 // int corner_count = 0;
 int flag_right=0;
-int frame_count = 0;
+unsigned long int frame_count = 0;
 
 int left_servo_count = 0;
 int right_servo_count = 0;
 
 
 //サーボモータの傾き
-int servo_right_curve = 47; //45°付近
-int servo_left_curve = 155; //135°付近
+#define servo_right_curve  47 //45°付近
+#define servo_left_curve  155 //135°付近
 
 
 //PID制御(https://kurobekoblog.com/pid)
@@ -56,8 +63,9 @@ int right_Speed;
 
 
 //サーボモータ
-#define penguin 3
+// #define penguin 3
 String servo_direction; //サーボモータの向き
+unsigned long currentTime, loopTimer;
 
 
 //LiDAR
@@ -73,46 +81,46 @@ const int HEADER = 0x59; //frame header of data package
 
 
 //右（Right）超音波センサ
-#define TRIG_right 5
-#define ECHO_right A0
+// #define TRIG_right 5
+// #define ECHO_right A0
 
 
 //左（Left）超音波センサ
-#define TRIG_left 6
-#define ECHO_left 13
+// #define TRIG_left 6
+// #define ECHO_left 13
 
 
 //気温（超音波センサの計測で使用）
-#define ultra_temp 14.6
+// #define ultra_temp 14.6
 
 
-//超音波センサ
-double duration_left = 0;
-double dist_ultra_left = 0;
-double speed_of_sound_left = 331.5 + 0.6 * ultra_temp;
+// //超音波センサ
+// double duration_left = 0;
+// double dist_ultra_left = 0;
+// double speed_of_sound_left = 331.5 + 0.6 * ultra_temp;
 
 
-double duration_right = 0;
-double dist_ultra_right = 0;
-double speed_of_sound_right = 331.5 + 0.6 * ultra_temp;
-
-
-
-//ローパスフィルタ（LiDAR）
-float LPF_LiDAR;
-
-//ローパスフィルタ（超音波センサ）
-float LPF_ultra_left;
-float LPF_ultra_right;
+// double duration_right = 0;
+// double dist_ultra_right = 0;
+// double speed_of_sound_right = 331.5 + 0.6 * ultra_temp;
 
 
 
+// //ローパスフィルタ（LiDAR）
+// float LPF_LiDAR;
 
-//PID制御
-int duty = 0;
-float dt, preTime;
-float x;
-float P, I, D, preP;
+// //ローパスフィルタ（超音波センサ）
+// float LPF_ultra_left;
+// float LPF_ultra_right;
+
+
+
+
+// //PID制御
+// int duty = 0;
+// float dt, preTime;
+// float x;
+// float P, I, D, preP;
 
 
 
@@ -176,14 +184,15 @@ int stop_(int left_speed, int right_speed)
 
 
 //サーボモータ
-void penDash(int x)
-{ //xの値は0~180。
-  int kyori = (x * 10.25) + 450; //角度からパルス幅への変換式
-  digitalWrite(penguin, HIGH);
-  delayMicroseconds(kyori);
-  digitalWrite(penguin, LOW);
-  delay(5);//速度　5~30くらいが良好。
-}
+// void penDash(int x)
+// { //xの値は0~180。
+//   int kyori = (x * 10.25) + 450; //角度からパルス幅への変換式
+//   digitalWrite(penguin, HIGH);
+//   delayMicroseconds(kyori);
+//   digitalWrite(penguin, LOW);
+//   delay(5);//速度　5~30くらいが良好。
+// }
+
 
 
 
@@ -227,81 +236,81 @@ void LiDAR()
 
 
 //超音波センサ
-void ultrasound_left()
-{
+// void ultrasound_left()
+// {
 
-  digitalWrite( TRIG_left, HIGH );
-  delayMicroseconds( 10 );
-  digitalWrite( TRIG_left, LOW );
-  duration_left = pulseIn( ECHO_left, HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
+//   digitalWrite( TRIG_left, HIGH );
+//   delayMicroseconds( 10 );
+//   digitalWrite( TRIG_left, LOW );
+//   duration_left = pulseIn( ECHO_left, HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
 
-  if (duration_left > 0) {
-    duration_left = duration_left / 2; // 往路にかかった時間
-    dist_ultra_left = duration_left * speed_of_sound_left * 100 / 1000000;
+//   if (duration_left > 0) {
+//     duration_left = duration_left / 2; // 往路にかかった時間
+//     dist_ultra_left = duration_left * speed_of_sound_left * 100 / 1000000;
 
-    dist_ultra_left = dist_ultra_left + 4.0;
-  }
+//     dist_ultra_left = dist_ultra_left + 4.0;
+//   }
 
   
-  // if (dist_ultra_left > 300)
-  // {
-  //   dist_ultra_left = 300;
-  // }
+//   // if (dist_ultra_left > 300)
+//   // {
+//   //   dist_ultra_left = 300;
+//   // }
 
-}
-
-
-void ultrasound_right()
-{
-  digitalWrite( TRIG_right, HIGH );
-  delayMicroseconds( 10 );
-  digitalWrite( TRIG_right, LOW );
-  duration_right = pulseIn( ECHO_right, HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
-
-  if (duration_right > 0) {
-    duration_right = duration_right / 2; // 往路にかかった時間
-    dist_ultra_right = duration_right * speed_of_sound_right * 100 / 1000000;
-
-    dist_ultra_right = dist_ultra_right + 4.0;
-  }
-
-  // if (dist_ultra_right > 300)
-  // {
-  //   dist_ultra_right = 300;
-  // }
-
-}
+// }
 
 
+// void ultrasound_right()
+// {
+//   digitalWrite( TRIG_right, HIGH );
+//   delayMicroseconds( 10 );
+//   digitalWrite( TRIG_right, LOW );
+//   duration_right = pulseIn( ECHO_right, HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
 
+//   if (duration_right > 0) {
+//     duration_right = duration_right / 2; // 往路にかかった時間
+//     dist_ultra_right = duration_right * speed_of_sound_right * 100 / 1000000;
 
-void raw_pass_filter(float distance, float k, float &lpf) //https://garchiving.com/lpf-by-program/
-{
-  float lastLPF;
+//     dist_ultra_right = dist_ultra_right + 4.0;
+//   }
 
-  lpf = (1 - k) * lastLPF + k * distance;
-  lastLPF = lpf;
-}
+//   // if (dist_ultra_right > 300)
+//   // {
+//   //   dist_ultra_right = 300;
+//   // }
+
+// }
 
 
 
-void PID(float Distance)
-{
-  x = Distance;
 
-  dt = (micros() - preTime) / 1000000.0;
-  preTime = micros();
-  P  = target - x;
-  I += P * dt;
-  D  = (P - preP) / dt;
-  preP = P;
+// void raw_pass_filter(float distance, float k, float &lpf) //https://garchiving.com/lpf-by-program/
+// {
+//   float lastLPF;
 
-  duty += Kp * P + Ki * I + Kd * D;
+//   lpf = (1 - k) * lastLPF + k * distance;
+//   lastLPF = lpf;
+// }
 
-  //if(duty<-10) duty = -10;
-  //if(duty>10) duty = 10;
 
-}
+
+// void PID(float Distance)
+// {
+//   x = Distance;
+
+//   dt = (micros() - preTime) / 1000000.0;
+//   preTime = micros();
+//   P  = target - x;
+//   I += P * dt;
+//   D  = (P - preP) / dt;
+//   preP = P;
+
+//   duty += Kp * P + Ki * I + Kd * D;
+
+//   //if(duty<-10) duty = -10;
+//   //if(duty>10) duty = 10;
+
+// }
 
 
 
@@ -310,7 +319,9 @@ void setup() {
   // put your setup code here, to run once:
 
   //サーボモータ
-  pinMode(penguin, OUTPUT);
+  // pinMode(penguin, OUTPUT);
+  
+  penguin.attach(3);
   
   //タイヤ
   pinMode(PIN_RIGHT_IN1, OUTPUT);
@@ -323,13 +334,15 @@ void setup() {
   Serial1.begin(115200);
 
   //超音波センサ
-  pinMode(ECHO_right, INPUT );
-  pinMode(TRIG_right, OUTPUT );
-  pinMode(ECHO_left, INPUT );
-  pinMode(TRIG_left, OUTPUT );
+  // pinMode(ECHO_right, INPUT );
+  // pinMode(TRIG_right, OUTPUT );
+  // pinMode(ECHO_left, INPUT );
+  // pinMode(TRIG_left, OUTPUT );
 
 
-  penDash(servo_left_curve); //135°
+  // penDash(servo_left_curve); //135°
+  penguin.write(servo_left_curve, 5, true);
+
   servo_direction = "left";
   delay(5000);
   
@@ -341,6 +354,9 @@ void setup() {
 
 
 void loop() {
+
+
+
 
   int left_tire_R, right_tire_R; //右側の壁に沿って走行
   int left_tire_L, right_tire_L; //左の壁に沿って走行
@@ -359,7 +375,8 @@ void loop() {
     
     if(left_servo_count == 0)
     {
-      penDash(servo_left_curve); //135°  
+      penguin.write(servo_left_curve, 5, true);
+      //penDash(servo_left_curve); //135°  
     }
 
     LiDAR();
@@ -398,11 +415,16 @@ void loop() {
       {
         frame_count++;
 
-        if(frame_count == 30000) //100回，壁との距離が3m以内なら，
+        if(frame_count == 50000) //100回，壁との距離が3m以内なら，
         {
           stop_(0,0);
           delay(3000);
           servo_direction = "right";
+
+
+          //penDash(servo_right_curve); //45°
+          penguin.write(servo_right_curve, 5, true);
+
 
           left_servo_count = 0;
         }
@@ -418,7 +440,7 @@ void loop() {
   {
     if(right_servo_count == 0)
     {
-      penDash(servo_right_curve); //45°
+      // penDash(servo_right_curve); //45°
     }
 
     LiDAR();
@@ -494,5 +516,6 @@ void loop() {
   // Serial.print("frame_count = ");
   // Serial.print(frame_count);
   // Serial.print("\n");
+
 
 }
