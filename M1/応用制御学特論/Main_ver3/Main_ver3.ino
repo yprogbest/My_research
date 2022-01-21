@@ -4,7 +4,7 @@
 
 #include <SoftwareSerial.h>
 
-
+int sometime;
 
 //曲がり角の処理
 float wall_distant = 300.0; // cm
@@ -12,6 +12,9 @@ float wall_distant = 300.0; // cm
 // int corner_count = 0;
 int flag_right=0;
 int frame_count = 0;
+
+int left_servo_count = 0;
+int right_servo_count = 0;
 
 
 //サーボモータの傾き
@@ -308,6 +311,7 @@ void setup() {
 
   //サーボモータ
   pinMode(penguin, OUTPUT);
+  
   //タイヤ
   pinMode(PIN_RIGHT_IN1, OUTPUT);
   pinMode(PIN_RIGHT_IN2, OUTPUT);
@@ -353,7 +357,15 @@ void loop() {
   if(servo_direction == "left") //もし，サーボが左を向いていたら，
   {
     
+    if(left_servo_count == 0)
+    {
+      penDash(servo_left_curve); //135°  
+    }
+
     LiDAR();
+    foward(left_tire_L, right_tire_L); //正面に進む 
+
+    left_servo_count++;
 
     if(dist >= wall_distant)
     {
@@ -386,20 +398,16 @@ void loop() {
       {
         frame_count++;
 
-        if(frame_count == 400) //100回，壁との距離が3m以内なら，
+        if(frame_count == 30000) //100回，壁との距離が3m以内なら，
         {
+          stop_(0,0);
+          delay(3000);
           servo_direction = "right";
+
+          left_servo_count = 0;
         }
       }
 
-    }
-
-
-    if(servo_direction == "left")
-    {
-      penDash(servo_left_curve); //135°
-      LiDAR();
-      foward(left_tire_L, right_tire_L); //正面に進む 
     }
 
   }
@@ -408,7 +416,11 @@ void loop() {
 
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
-    penDash(servo_right_curve); //45°
+    if(right_servo_count == 0)
+    {
+      penDash(servo_right_curve); //45°
+    }
+
     LiDAR();
     foward(left_tire_R, right_tire_R); //正面に進む
 
@@ -418,14 +430,18 @@ void loop() {
       left(200, 200);
 
       servo_direction = "left";
+
+      right_servo_count = 0;
+
+
+      flag_right = -1;
     }
 
 
-    flag_right = -1;
+    right_servo_count++;
 
   }
 
- 
 
 
   // Serial.println(servo_direction);
@@ -440,13 +456,13 @@ void loop() {
   //Serial.print("\t");
   // Serial.print("dist = ");
   // Serial.print(dist);
-  // Serial.print("\t");
+  // Serial.print("\n");
   // Serial.print("LPF_LiDAR = ");
   // Serial.print(LPF_LiDAR);
   // Serial.print("\n");
-  //Serial.print("duty = ");
-  //Serial.print(duty);
-  //Serial.print("\n");
+  // Serial.print("duty = ");
+  // Serial.print(duty);
+  // Serial.print("\t");
 
   // Serial.print("dist_ultra_right = ");
   // Serial.print(dist_ultra_right);
