@@ -12,7 +12,7 @@ Servo penguin;
 
 
 //曲がり角の処理
-#define wall_distant  300 // cm
+#define wall_distant  250 // cm
 
 // int corner_count = 0;
 int flag_right=0;
@@ -23,8 +23,8 @@ int right_servo_count = 0;
 
 
 //サーボモータの傾き
-#define servo_right_curve  38 //45°付近
-#define servo_left_curve  145 //135°付近
+#define servo_right_curve  35 //45°付近
+#define servo_left_curve  147 //135°付近
 
 
 //PID制御(https://kurobekoblog.com/pid)
@@ -354,8 +354,6 @@ void setup() {
 void loop() {
 
 
-
-
   int left_tire_R, right_tire_R; //右側の壁に沿って走行
   int left_tire_L, right_tire_L; //左の壁に沿って走行
 
@@ -377,16 +375,14 @@ void loop() {
       //penDash(servo_left_curve); //135°  
     }
 
-    LiDAR();
-    foward(left_tire_L, right_tire_L); //正面に進む 
 
     left_servo_count++;
 
     if(dist >= wall_distant)
     {
 
-      left(180, 200);
-      delay(50);
+      foward(Low_Speed, High_Speed+20);
+      delay(30);
 
 
       // corner_count++;
@@ -434,9 +430,9 @@ void loop() {
       }
 
     }
-    else
-    {
-    }
+
+    LiDAR();
+    foward(left_tire_L, right_tire_L); //正面に進む 
 
   }
 
@@ -451,14 +447,9 @@ void loop() {
     if(dist >= wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
 
-      left(180, 200);
-      delay(50);
-
-
       servo_direction = "left";
 
       right_servo_count = 0;
-
 
       flag_right = -1;
     }
