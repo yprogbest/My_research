@@ -11,8 +11,6 @@
 Servo penguin;
 
 
-int sometime;
-
 //曲がり角の処理
 #define wall_distant  300 // cm
 
@@ -25,8 +23,8 @@ int right_servo_count = 0;
 
 
 //サーボモータの傾き
-#define servo_right_curve  47 //45°付近
-#define servo_left_curve  155 //135°付近
+#define servo_right_curve  38 //45°付近
+#define servo_left_curve  145 //135°付近
 
 
 //PID制御(https://kurobekoblog.com/pid)
@@ -58,8 +56,8 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
-#define High_Speed 200
-#define Low_Speed 180
+#define High_Speed 195
+#define Low_Speed 150
 
 
 //サーボモータ
@@ -386,18 +384,25 @@ void loop() {
 
     if(dist >= wall_distant)
     {
-      left(200, 200);
+
+      left(180, 200);
+      delay(50);
+
 
       // corner_count++;
 
       if(flag_right == -1)
       {
         flag_right = -1;
+
       }
       else
       {
         flag_right=1;
       }
+
+
+      left_servo_count = 0;
 
       frame_count = 0;
     }
@@ -411,11 +416,12 @@ void loop() {
 
     if(flag_right == 1)
     {
+
       if(dist<wall_distant)
       {
         frame_count++;
 
-        if(frame_count == 50000) //100回，壁との距離が3m以内なら，
+        if(frame_count == 80000) //100回，壁との距離が3m以内なら，
         {
           stop_(0,0);
           penguin.write(servo_right_curve);
@@ -424,12 +430,12 @@ void loop() {
 
           //penDash(servo_right_curve); //45°
           
-
-
-          left_servo_count = 0;
         }
       }
 
+    }
+    else
+    {
     }
 
   }
@@ -438,18 +444,16 @@ void loop() {
 
   if (servo_direction == "right") //もし，サーボが右を向いていたら，
   {
-    if(right_servo_count == 0)
-    {
-      // penDash(servo_right_curve); //45°
-    }
-
+   
     LiDAR();
     foward(left_tire_R, right_tire_R); //正面に進む
 
     if(dist >= wall_distant) //壁との距離が遠くなったら（曲がり角）
     {
 
-      left(200, 200);
+      left(180, 200);
+      delay(50);
+
 
       servo_direction = "left";
 
