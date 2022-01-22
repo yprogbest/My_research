@@ -23,7 +23,7 @@ int right_servo_count = 0;
 
 
 //サーボモータの傾き
-#define servo_right_curve  35 //45°付近
+#define servo_right_curve  40 //45°付近
 #define servo_left_curve  147 //135°付近
 
 
@@ -56,8 +56,12 @@ int right_Speed;
 //最大と最小のスピードを指定
 // #define High_Speed 255
 // #define Low_Speed 220
+#define High_Speed_right 195
+#define Low_Speed_right 150
 #define High_Speed 195
 #define Low_Speed 150
+
+
 
 
 //サーボモータ
@@ -358,8 +362,8 @@ void loop() {
   int left_tire_L, right_tire_L; //左の壁に沿って走行
 
 
-  left_tire_R = int((float(High_Speed - Low_Speed) / 200.0)*dist + Low_Speed);
-  right_tire_R = int((float(Low_Speed - High_Speed) / 200.0)*dist + High_Speed);
+  left_tire_R = int((float(High_Speed_right - Low_Speed_right) / 200.0)*dist + Low_Speed_right);
+  right_tire_R = int((float(Low_Speed_right - High_Speed_right) / 200.0)*dist + High_Speed_right);
 
   left_tire_L = int((float(Low_Speed - High_Speed) / 200.0)*dist + High_Speed);
   right_tire_L = int((float(High_Speed - Low_Speed) / 200.0)*dist + Low_Speed);
@@ -382,7 +386,7 @@ void loop() {
     {
 
       foward(Low_Speed, High_Speed+20);
-      delay(30);
+      delay(70);
 
 
       // corner_count++;
