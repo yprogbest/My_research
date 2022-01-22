@@ -6,9 +6,9 @@
 
 // https://garchiving.com/pwm-control-with-arduino/
 // https://qiita.com/thorikawa/items/a6377d2d4b4535dd9004
-#include <VarSpeedServo.h>
+#include <Servo.h>
 
-VarSpeedServo penguin;
+Servo penguin;
 
 
 int sometime;
@@ -44,12 +44,12 @@ int right_servo_count = 0;
 //右
 #define PIN_RIGHT_IN1 7
 #define PIN_RIGHT_IN2 8
-#define PIN_RIGHT_VREF 9
+#define PIN_RIGHT_VREF 5
 
 //左
 #define PIN_LEFT_IN1 4
 #define PIN_LEFT_IN2 2
-#define PIN_LEFT_VREF 10
+#define PIN_LEFT_VREF 6
 
 //DCモータのスピード
 int left_Speed;
@@ -63,7 +63,7 @@ int right_Speed;
 
 
 //サーボモータ
-// #define penguin 3
+// #define penguin 9
 String servo_direction; //サーボモータの向き
 unsigned long currentTime, loopTimer;
 
@@ -321,7 +321,7 @@ void setup() {
   //サーボモータ
   // pinMode(penguin, OUTPUT);
   
-  penguin.attach(3);
+  penguin.attach(9);
   
   //タイヤ
   pinMode(PIN_RIGHT_IN1, OUTPUT);
@@ -341,7 +341,7 @@ void setup() {
 
 
   // penDash(servo_left_curve); //135°
-  penguin.write(servo_left_curve, 5, true);
+  penguin.write(servo_left_curve);
 
   servo_direction = "left";
   delay(5000);
@@ -375,7 +375,7 @@ void loop() {
     
     if(left_servo_count == 0)
     {
-      penguin.write(servo_left_curve, 5, true);
+      penguin.write(servo_left_curve);
       //penDash(servo_left_curve); //135°  
     }
 
@@ -418,12 +418,12 @@ void loop() {
         if(frame_count == 50000) //100回，壁との距離が3m以内なら，
         {
           stop_(0,0);
-          delay(3000);
+          penguin.write(servo_right_curve);
+          delay(1000);
           servo_direction = "right";
 
-
           //penDash(servo_right_curve); //45°
-          penguin.write(servo_right_curve, 5, true);
+          
 
 
           left_servo_count = 0;
