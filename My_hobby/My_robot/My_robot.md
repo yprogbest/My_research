@@ -1,5 +1,5 @@
 # 自律走行ロボット（自作）
-![0C4ED5E6-5970-443A-A038-4FA338512422](https://user-images.githubusercontent.com/82224433/133868393-978f8b44-b621-494f-ab46-6bf3143bad08.jpg)
+![15666433807472](https://user-images.githubusercontent.com/82224433/156018009-c44d05e4-0985-412f-ae77-c6af812fdb64.jpg)
 
 
 ## 開発環境
@@ -25,3 +25,7 @@
 ![14241707-3AF6-4E09-857A-81D627BAD2CE](https://user-images.githubusercontent.com/82224433/134201357-0f0bd674-4327-4268-82b6-60d3ebbc1295.jpg)
 - [キャリブレーションで用いた手法(github)](https://github.com/ehong-tl/camera_2d_lidar_calibration)
 - githubからクローンしたプログラムファイルを実行しようとすると，エラーが表示された．そのため，自身でプログラムを改編したところ，誤った所にLiDARの点群が投影される箇所が存在することが分かった．今後は，再度プログラムを確認するとともに，Pythonでのコードの書き方を理解する必要がある．
+
+
+## move_baseによる自律走行結果（2022/3/1日現在）
+LiDARの向きを変更することで、期待した走行結果が得られた。後は、パラメータを調整する必要がある。
